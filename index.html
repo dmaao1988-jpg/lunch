@@ -147,6 +147,10 @@
     padding:6px 0;border-bottom:1px dashed var(--line)}
   .pick-menus .mr:last-child{border-bottom:none}
   .pick-menus .mr .mp{color:var(--ink-2);font-variant-numeric:tabular-nums}
+  .notebox{background:var(--green-lt);border-radius:9px;padding:10px 12px;font-size:12.5px;color:var(--ink);
+    white-space:pre-wrap;line-height:1.65;margin-top:9px;border-left:3px solid var(--green-mid)}
+  .notebox .nl{display:block;font-size:11px;color:var(--green-dk);font-weight:700;margin-bottom:3px;letter-spacing:.3px}
+  .menu-drop .notebox{margin:0 0 9px}
   .search{position:relative;margin-bottom:13px}
   .search input{width:100%;padding:12px 14px 12px 40px;border:1px solid var(--line);border-radius:30px;
     background:var(--card);font-size:14px;color:var(--ink)}
@@ -460,6 +464,8 @@
               </div>
             </div>
           </div>
+          <div class="fld"><label>메모 (예약·인원·특이사항)</label>
+            <textarea id="eNote" rows="3" placeholder="예) 6인 이상은 전화 예약 필수 (031-000-0000)&#10;단체석 최대 12명 · 룸 있음&#10;주말 휴무, 라스트오더 20:30&#10;카드 안 되는 날 있음"></textarea></div>
           <div class="acts">
             <button class="btn pri flex" id="saveRestaurant">저장</button>
             <button class="btn sm" id="cancelEdit">취소</button>
@@ -604,6 +610,7 @@ var GAS_DEFAULT = "https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ
     return{office,sort:'due',lastPeople:1,restaurants:[
       {id:id(),name:'백암순대국 (예시)',cat:'국밥·탕·찌개',address:'',...off(.001,.0016),
         menus:[{name:'순대국밥',price:9000},{name:'내장국밥',price:9000},{name:'모둠순대',price:13000}],
+        note:'6인 이상 전화 예약 필수\n단체석 최대 12명 · 룸 1개\n11:30 이후 웨이팅 있음',
         visits:[{d:dago(1),p:3,a:27000},{d:dago(9),p:2,a:18000},{d:dago(16),p:4,a:40000}]},
       {id:id(),name:'평양냉면 (예시)',cat:'냉면·막국수·콩국수',address:'',...off(-.0012,.0009),
         menus:[{name:'물냉면',price:11000},{name:'비빔냉면',price:11000},{name:'만두',price:8000}],
@@ -715,9 +722,12 @@ var GAS_DEFAULT = "https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ
     return`background:linear-gradient(135deg,${c.c1} 0%,${c.c2} 100%)`;}
   function cardHtml(r,rank){
     const cat=catBy[r.cat]||{emoji:'🍽️'},km=distKm(state.office,r),ll=lastLabel(r);
-    const pf=priceFrom(r),mc=(r.menus||[]).length;
+    const pf=priceFrom(r),mc=(r.menus||[]).length,note=(r.note||'').trim();
     const rk=rank?`<span class="rank ${rank===1?'gold':''}">${rank}</span>`:'';
     const mlist=mc?r.menus.map(m=>`<div class="mr"><span>${esc(m.name)}</span><span class="mp">${m.price!=null?won(m.price):'—'}</span></div>`).join(''):'';
+    const nbox=note?`<div class="notebox"><span class="nl">📝 메모</span>${esc(note)}</div>`:'';
+    const hasDrop=mc||note;
+    const dropLabel=mc?`메뉴 ${mc}${note?' 📝':''}`:'메모 📝';
     return`<article class="fcard">
       <div class="thumb" style="${thumbStyle(r.cat)}">${rk}<span>${cat.emoji}</span>
         <span class="dist-tag">${fmtDist(km)}</span></div>
@@ -730,17 +740,18 @@ var GAS_DEFAULT = "https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ
       <div class="ffoot">
         <button class="btn pri sm flex" data-ate="${r.id}">먹었어요</button>
         <a class="icon-btn" href="${kakaoDir(r)}" target="_blank" rel="noopener" title="길찾기">🗺</a>
-        ${mc?`<button class="fmenu" data-menu="${r.id}">메뉴 ${mc}</button>`:''}
+        ${hasDrop?`<button class="fmenu" data-menu="${r.id}">${dropLabel}</button>`:''}
       </div>
-      ${mc?`<div class="menu-drop hidden" id="md-${r.id}">${mlist}</div>`:''}
+      ${hasDrop?`<div class="menu-drop hidden" id="md-${r.id}">${nbox}${mlist}</div>`:''}
     </article>`;}
   function bindCards(root){
     root.querySelectorAll('[data-ate]').forEach(b=>b.onclick=()=>openLog(b.dataset.ate));
     root.querySelectorAll('[data-menu]').forEach(b=>b.onclick=()=>{
       const d=document.getElementById('md-'+b.dataset.menu);if(!d)return;
       const closed=d.classList.toggle('hidden');
-      const n=(state.restaurants.find(x=>x.id===b.dataset.menu).menus||[]).length;
-      b.textContent=closed?`메뉴 ${n}`:`메뉴 접기`;});}
+      const r=state.restaurants.find(x=>x.id===b.dataset.menu);
+      const n=(r.menus||[]).length,hasNote=!!(r.note||'').trim();
+      b.textContent=closed?(n?`메뉴 ${n}${hasNote?' 📝':''}`:'메모 📝'):'접기';});}
 
   function updateRail(){
     const g=$('#altGrid'),p=$('#railPrev'),n=$('#railNext');
@@ -766,18 +777,19 @@ var GAS_DEFAULT = "https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ
       $('#altGrid').innerHTML='';$('#recentFeed').innerHTML='';return;}
     const pick=recommend(),cat=catBy[pick.cat]||{emoji:'🍽️'};
     const km=distKm(state.office,pick),ll=lastLabel(pick),pf=priceFrom(pick);
-    const mc=(pick.menus||[]).length;
+    const mc=(pick.menus||[]).length,pnote=(pick.note||'').trim();
     let ml='';
     if(mc){const m=pick.menus[Math.floor(Math.random()*pick.menus.length)];
       ml=`<div class="pmenu">🍽 오늘은 ${esc(m.name)} 어때요? ${won(m.price)}</div>
           <button class="pmtog" id="pickMenuTog">메뉴 ${mc}개 전체 보기 ▾</button>`;}
+    const pnbox=pnote?`<div class="notebox"><span class="nl">📝 알아두기</span>${esc(pnote)}</div>`:'';
     const mlist=mc?pick.menus.map(m=>`<div class="mr"><span>${esc(m.name)}</span><span class="mp">${m.price!=null?won(m.price):'—'}</span></div>`).join(''):'';
     wrap.innerHTML=`<div class="pick" id="pickCard">
       <div class="pe">${cat.emoji}</div>
       <div class="pb"><div class="plabel">오늘의 추천</div>
         <div class="pn">${esc(pick.name)}</div>
         <div class="pm">${esc(pick.cat)} · ${fmtDist(km)} · 도보 ${walkMin(km)}분${pf?' · '+pf:''} · ${sinceText(ll.d)}</div>
-        ${ml}</div>
+        ${ml}${pnbox}</div>
       <div class="pacts">
         <button class="btn pri" id="ateNow">여기서 먹었어요</button>
         <button class="btn" id="reroll">다시 뽑기</button>
@@ -826,6 +838,7 @@ var GAS_DEFAULT = "https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ
     if(catFilter)arr=arr.filter(r=>r.cat===catFilter);
     if(query){const q=query.toLowerCase();
       arr=arr.filter(r=>r.name.toLowerCase().includes(q)||r.cat.toLowerCase().includes(q)||
+        (r.note||'').toLowerCase().includes(q)||
         (r.menus||[]).some(m=>String(m.name).toLowerCase().includes(q)));}
     const key={due:(a,b)=>{const x=daysSince(lastVisit(a)),y=daysSince(lastVisit(b));
         return(y===null?9999:y)-(x===null?9999:x);},
@@ -1121,6 +1134,7 @@ var GAS_DEFAULT = "https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ
     $('#eCat').value=r?r.cat:CATEGORIES[0].label;
     $('#eLat').value=r?r.lat:'';$('#eLng').value=r?r.lng:'';
     draft.address=r?(r.address||''):'';$('#eAddr').textContent=draft.address||'미지정';
+    $('#eNote').value=r?(r.note||''):'';
     $('#menuEditor').innerHTML='';
     (r&&r.menus&&r.menus.length?r.menus:[{name:'',price:''}]).forEach(m=>addMenuRow(m));
     $('#eResults').classList.remove('show');$('#eSearch').value='';
@@ -1135,19 +1149,19 @@ var GAS_DEFAULT = "https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ
     const n=$('#eName').value.trim();if(!n){toast('가게 이름을 넣어주세요');return;}
     const lat=parseFloat($('#eLat').value),lng=parseFloat($('#eLng').value);
     if(isNaN(lat)||isNaN(lng)){toast('위치를 검색하거나 좌표를 입력하세요');return;}
-    const cat=$('#eCat').value,menus=collectMenus();
+    const cat=$('#eCat').value,menus=collectMenus(),note=$('#eNote').value.trim();
     if(editingId){const r=state.restaurants.find(x=>x.id===editingId);
-      Object.assign(r,{name:n,cat,lat,lng,address:draft.address,menus});}
-    else state.restaurants.push({id:id(),name:n,cat,lat,lng,address:draft.address,menus,visits:[]});
+      Object.assign(r,{name:n,cat,lat,lng,address:draft.address,menus,note});}
+    else state.restaurants.push({id:id(),name:n,cat,lat,lng,address:draft.address,menus,note,visits:[]});
     save();closeEditor();renderAll();drawMap('admin');toast(editingId?'수정됨':`${n} 추가됨`);}
   function renderAdmList(){
     const el=$('#admList');
     if(!state.restaurants.length){el.innerHTML=`<div class="feed"><div class="empty">등록된 식당이 없어요.</div></div>`;return;}
     el.innerHTML=state.restaurants.map(r=>{const c=catBy[r.cat]||{emoji:'🍽️'};
-      const pf=priceFrom(r),mc=(r.menus||[]).length;
+      const pf=priceFrom(r),mc=(r.menus||[]).length,hn=!!(r.note||'').trim();
       return`<div class="arow"><span class="ae">${c.emoji}</span>
         <span class="ab"><span class="an">${esc(r.name)}</span>
-          <span class="as">${esc(r.cat)} · 메뉴 ${mc}개${pf?' · '+pf:''}</span></span>
+          <span class="as">${esc(r.cat)} · 메뉴 ${mc}개${pf?' · '+pf:''}${hn?' · 📝 메모':''}</span></span>
         <button class="btn xs" data-edit="${r.id}">수정</button>
         <button class="btn xs danger" data-del="${r.id}">삭제</button></div>`;}).join('');
     el.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEditor(state.restaurants.find(x=>x.id===b.dataset.edit)));
