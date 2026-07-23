@@ -138,6 +138,15 @@
   .pick .pacts{display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
 
   /* ===== 검색·필터 ===== */
+  .pick.open{border-bottom-left-radius:0;border-bottom-right-radius:0;margin-bottom:0}
+  .pick .pmtog{background:none;border:none;padding:0;margin-top:8px;color:var(--green-dk);
+    font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:underline}
+  .pick-menus{background:#FBFCFB;border:1px solid var(--line);border-left:4px solid var(--green);
+    border-top:none;border-radius:0 0 var(--r) var(--r);padding:12px 19px 14px;margin-bottom:14px}
+  .pick-menus .mr{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;
+    padding:6px 0;border-bottom:1px dashed var(--line)}
+  .pick-menus .mr:last-child{border-bottom:none}
+  .pick-menus .mr .mp{color:var(--ink-2);font-variant-numeric:tabular-nums}
   .search{position:relative;margin-bottom:13px}
   .search input{width:100%;padding:12px 14px 12px 40px;border:1px solid var(--line);border-radius:30px;
     background:var(--card);font-size:14px;color:var(--ink)}
@@ -370,6 +379,16 @@
     <section class="view" id="viewAdmin">
       <div class="page-head"><div><h1>관리</h1><div class="desc">식당·기록·연결 설정</div></div></div>
 
+      <div class="panel hidden" id="adminLock">
+        <h4>🔒 관리자 확인</h4>
+        <div style="font-size:12.5px;color:var(--ink-2);margin-bottom:14px" id="adminLockMsg">
+          식당 추가·삭제, 데이터 초기화가 가능한 화면이에요. 관리자 비밀번호를 입력해 주세요.</div>
+        <div class="fld"><input id="adminPassIn" type="password" placeholder="관리자 비밀번호" autocomplete="off"></div>
+        <button class="btn pri blk" id="adminUnlock">잠금 해제</button>
+      </div>
+
+      <div id="adminBody">
+
       <div class="sec">
         <div class="sec-head"><h3>☁️ 구글시트 저장</h3></div>
         <div class="panel">
@@ -463,7 +482,9 @@
 
       <div class="acts" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">
         <button class="btn sm" id="exportData">데이터 내보내기</button>
+        <button class="btn sm" id="adminLockBtn">🔒 관리 잠그기</button>
         <button class="btn sm danger" id="resetAll" style="margin-left:auto">전체 초기화</button>
+      </div>
       </div>
     </section>
 
@@ -745,9 +766,13 @@ var GAS_DEFAULT = "https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ
       $('#altGrid').innerHTML='';$('#recentFeed').innerHTML='';return;}
     const pick=recommend(),cat=catBy[pick.cat]||{emoji:'🍽️'};
     const km=distKm(state.office,pick),ll=lastLabel(pick),pf=priceFrom(pick);
-    let ml='';if(pick.menus&&pick.menus.length){const m=pick.menus[Math.floor(Math.random()*pick.menus.length)];
-      ml=`<div class="pmenu">🍽 오늘은 ${esc(m.name)} 어때요? ${won(m.price)}</div>`;}
-    wrap.innerHTML=`<div class="pick">
+    const mc=(pick.menus||[]).length;
+    let ml='';
+    if(mc){const m=pick.menus[Math.floor(Math.random()*pick.menus.length)];
+      ml=`<div class="pmenu">🍽 오늘은 ${esc(m.name)} 어때요? ${won(m.price)}</div>
+          <button class="pmtog" id="pickMenuTog">메뉴 ${mc}개 전체 보기 ▾</button>`;}
+    const mlist=mc?pick.menus.map(m=>`<div class="mr"><span>${esc(m.name)}</span><span class="mp">${m.price!=null?won(m.price):'—'}</span></div>`).join(''):'';
+    wrap.innerHTML=`<div class="pick" id="pickCard">
       <div class="pe">${cat.emoji}</div>
       <div class="pb"><div class="plabel">오늘의 추천</div>
         <div class="pn">${esc(pick.name)}</div>
@@ -757,7 +782,12 @@ var GAS_DEFAULT = "https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ
         <button class="btn pri" id="ateNow">여기서 먹었어요</button>
         <button class="btn" id="reroll">다시 뽑기</button>
         <a class="btn" href="${kakaoDir(pick)}" target="_blank" rel="noopener">🗺 길찾기</a>
-      </div></div>`;
+      </div></div>
+      ${mc?`<div class="pick-menus hidden" id="pickMenus">${mlist}</div>`:''}`;
+    if(mc)$('#pickMenuTog').onclick=()=>{
+      const box=$('#pickMenus'),closed=box.classList.toggle('hidden');
+      $('#pickCard').classList.toggle('open',!closed);
+      $('#pickMenuTog').textContent=closed?`메뉴 ${mc}개 전체 보기 ▾`:'메뉴 접기 ▴';};
     $('#ateNow').onclick=()=>openLog(pick.id);
     $('#reroll').onclick=()=>{if(state.restaurants.length>1){excluded.add(pick.id);
       if(excluded.size>=state.restaurants.length){excluded.clear();toast('한 바퀴 다 돌았어요');}}
@@ -1133,6 +1163,39 @@ var GAS_DEFAULT = "https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ
     const a=document.createElement('a');a.href=URL.createObjectURL(b);
     a.download=`lunch-data-${today()}.json`;a.click();URL.revokeObjectURL(a.href);toast('백업 파일 저장됨');}
 
+  /* ---------- 관리자 잠금 ---------- */
+  const ADMIN_LS='lunch-admin-ok';
+  let adminOK=false;try{adminOK=localStorage.getItem(ADMIN_LS)==='1';}catch(e){}
+  function applyAdminLock(){
+    const locked=!adminOK&&!!GAS_URL;
+    $('#adminLock').classList.toggle('hidden',!locked);
+    $('#adminBody').classList.toggle('hidden',locked);
+    if(locked)setTimeout(()=>{const i=$('#adminPassIn');if(i)i.focus();},80);
+    return!locked;}
+  async function tryUnlock(){
+    const v=$('#adminPassIn').value.trim();
+    if(!v){toast('비밀번호를 입력하세요');return;}
+    const btn=$('#adminUnlock');btn.textContent='확인 중…';btn.disabled=true;
+    try{
+      const res=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({action:'adminAuth',pass:PASS,adminPass:v})});
+      const j=await res.json();
+      if(j&&j.error==='auth'){$('#adminLockMsg').textContent='앱 비밀번호부터 확인이 필요해요.';askPass();}
+      else if(j&&j.ok&&j.granted){
+        adminOK=true;try{localStorage.setItem(ADMIN_LS,'1');}catch(e){}
+        $('#adminPassIn').value='';applyAdminLock();
+        renderOffice();renderAdmList();renderVlog();
+        if(kakaoReady)ensureMap('admin');else mapPlaceholder('mapAdmin');
+        toast('잠금 해제됨');}
+      else{$('#adminLockMsg').textContent='비밀번호가 맞지 않아요. 다시 입력해 주세요.';
+        $('#adminPassIn').value='';$('#adminPassIn').focus();}
+    }catch(e){$('#adminLockMsg').textContent='연결에 실패했어요. 잠시 후 다시 시도해 주세요.';}
+    finally{btn.textContent='잠금 해제';btn.disabled=false;}}
+  function lockAdmin(){
+    adminOK=false;try{localStorage.removeItem(ADMIN_LS);}catch(e){}
+    $('#adminLockMsg').textContent='식당 추가·삭제, 데이터 초기화가 가능한 화면이에요. 관리자 비밀번호를 입력해 주세요.';
+    applyAdminLock();toast('관리 탭을 잠갔어요');}
+
   /* ---------- 탭 ---------- */
   function showTab(t){
     curTab=t;
@@ -1146,13 +1209,15 @@ var GAS_DEFAULT = "https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ
       const box=$('#mapBox');
       if(!box.classList.contains('hidden')){if(kakaoReady)ensureMap('main');else mapPlaceholder('mapBox');}}
     if(t==='Stats')renderStats();
-    if(t==='Admin'){renderOffice();renderAdmList();renderVlog();
+    if(t==='Admin'){
+      if(!applyAdminLock())return;
+      renderOffice();renderAdmList();renderVlog();
       if(kakaoReady)ensureMap('admin');else mapPlaceholder('mapAdmin');}}
   function renderAll(){
     renderHome();
     if(curTab==='List'){renderChips();renderList();}
     if(curTab==='Stats')renderStats();
-    if(curTab==='Admin'){renderAdmList();renderVlog();renderOffice();}
+    if(curTab==='Admin'&&adminOK){renderAdmList();renderVlog();renderOffice();}
     if(kakaoReady&&kmap)drawMap('main');}
 
   /* ---------- 바인딩 ---------- */
@@ -1221,6 +1286,10 @@ var GAS_DEFAULT = "https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ
       const r=state.restaurants.find(x=>x.id===$('#logRest').value);
       const est=r?Math.round(avgPrice(r)):0;
       $('#logAmount').placeholder=est?`예: ${est.toLocaleString('ko-KR')} (1인 기준)`:'총 결제금액';});
+
+    $('#adminUnlock').onclick=tryUnlock;
+    $('#adminPassIn').addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock();});
+    $('#adminLockBtn').onclick=lockAdmin;
 
     $('#exportData').onclick=exportData;
     $('#resetAll').onclick=()=>{if(!confirm('모든 식당·기록을 지우고 처음 상태로 되돌릴까요?'))return;
