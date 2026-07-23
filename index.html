@@ -291,6 +291,7 @@
         <div class="paste-acts">
           <button class="btn ghost sm" id="gasPull">↓ 시트에서 불러오기</button>
           <button class="btn ghost sm" id="gasPush">↑ 시트로 올리기</button>
+          <button class="btn ghost sm" id="changePass">🔒 비밀번호</button>
         </div>
         <div class="hintbox">연결하면 기록이 구글시트에 저장돼서 폰·PC 어디서 열어도 같은 데이터를 봐요.<br>
           시트에서 값을 직접 고친 뒤에는 <b>↓ 시트에서 불러오기</b>를 눌러 반영하세요.</div>
@@ -384,6 +385,22 @@
   </div>
 
   <div class="foot">날씨 · Open-Meteo  /  지도·검색·길찾기 · Kakao  /  저장 · 이 브라우저</div>
+</div>
+
+<div class="modal hidden" id="passModal">
+  <div class="modal-card">
+    <h3>🔒 비밀번호</h3>
+    <div class="sub2" id="passMsg">팀에서 정한 비밀번호를 입력해 주세요.</div>
+    <div class="field" style="margin-bottom:0">
+      <input id="passIn" type="password" placeholder="비밀번호" autocomplete="current-password"
+        style="width:100%;font-family:inherit;font-size:16px;padding:11px;border:1px solid var(--line-strong);border-radius:3px;background:var(--paper);color:var(--ink)">
+    </div>
+    <div class="modal-acts">
+      <button class="btn primary block" id="passOk">확인</button>
+      <button class="btn ghost sm" id="passCancel">나중에</button>
+    </div>
+    <div class="hintbox" style="margin-top:12px">비밀번호를 모르면 이 기기에만 기록이 저장돼요.<br>한 번 입력하면 다음부터는 안 물어봅니다.</div>
+  </div>
 </div>
 
 <div class="modal hidden" id="logModal">
@@ -493,23 +510,43 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
   function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}schedulePush();}
 
   /* ===== 구글시트 동기화 ===== */
-  const GAS_LS='lunch-gas-url';
-  let GAS_URL='';try{GAS_URL=localStorage.getItem(GAS_LS)||'';}catch(e){}
-  let pushTimer=null,suppressPush=false;
+  const GAS_LS='lunch-gas-url', PASS_LS='lunch-pass';
+  const GAS_DEFAULT='https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ2NUHv4W579PImYBu-h598r3iouqsyIPVae4GRCL-SAW8zl/exec';
+  let GAS_URL=GAS_DEFAULT;try{GAS_URL=localStorage.getItem(GAS_LS)||GAS_DEFAULT;}catch(e){}
+  let PASS='';try{PASS=localStorage.getItem(PASS_LS)||'';}catch(e){}
+
+  function askPass(msg){
+    $('#passMsg').textContent=msg||'팀에서 정한 비밀번호를 입력해 주세요.';
+    $('#passIn').value='';
+    $('#passModal').classList.remove('hidden');
+    setTimeout(()=>$('#passIn').focus(),80);
+  }
+  function closePass(){$('#passModal').classList.add('hidden');}
+  async function submitPass(){
+    const v=$('#passIn').value.trim();
+    if(!v){toast('비밀번호를 입력하세요');return;}
+    PASS=v;try{localStorage.setItem(PASS_LS,v);}catch(e){}
+    closePass();setSync('확인 중…');
+    await pullNow();
+  }
+  let pushTimer=null,suppressPush=false,pendingPush=false;
   function nowHM(){return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}
   function setSync(msg,cls){const el=$('#syncStatus');if(el)el.innerHTML='동기화: <span class="'+(cls||'')+'">'+esc(msg)+'</span>';}
   function schedulePush(){
     if(!GAS_URL||suppressPush)return;
+    pendingPush=true;
     clearTimeout(pushTimer);pushTimer=setTimeout(pushNow,1500);
   }
   async function pushNow(quiet){
     if(!GAS_URL){if(!quiet)toast('먼저 시트 주소를 연결하세요');return;}
+    pendingPush=false;
     setSync('저장 중…');
     try{
       const res=await fetch(GAS_URL,{method:'POST',
         headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body:JSON.stringify({action:'save',state})});
+        body:JSON.stringify({action:'save',pass:PASS,state})});
       const j=await res.json();
+      if(j&&j.error==='auth'){setSync('비밀번호 필요','badge-bad');askPass('비밀번호가 맞지 않아요. 다시 입력해 주세요.');return;}
       if(j&&j.ok){setSync(nowHM()+' 저장됨','badge-ok');if(!quiet)toast('시트에 저장했어요');}
       else{setSync('저장 실패','badge-bad');if(!quiet)toast('저장 실패 · 주소를 확인하세요');}
     }catch(e){setSync('저장 실패 (연결 안 됨)','badge-bad');if(!quiet)toast('연결 실패 · 주소를 확인하세요');}
@@ -518,8 +555,12 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     if(!GAS_URL){if(!quiet)toast('먼저 시트 주소를 연결하세요');return;}
     setSync('불러오는 중…');
     try{
-      const res=await fetch(GAS_URL,{method:'GET'});
+      const res=await fetch(GAS_URL,{method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({action:'load',pass:PASS})});
       const j=await res.json();
+      if(j&&j.error==='auth'){setSync('비밀번호 필요','badge-bad');
+        askPass(PASS?'비밀번호가 맞지 않아요. 다시 입력해 주세요.':'팀에서 정한 비밀번호를 입력해 주세요.');return;}
       if(!j||!j.ok||!j.state){setSync('불러오기 실패','badge-bad');if(!quiet)toast('불러오기 실패');return;}
       const remote=j.state,rc=(remote.restaurants||[]).length;
       if(rc===0&&state.restaurants.length>0){
@@ -543,6 +584,21 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
       toast('/exec 로 끝나는 웹앱 주소여야 해요');return;}
     GAS_URL=u;try{localStorage.setItem(GAS_LS,u);}catch(e){}
     toast('연결됨 · 시트를 확인하는 중');pullNow();
+  }
+  /* 자동 동기화: 30초마다 + 앱으로 돌아올 때 */
+  let autoTimer=null,lastAuto=0;
+  function autoSync(){
+    if(!GAS_URL||document.hidden||pendingPush)return;
+    if($('#logModal')&&!$('#logModal').classList.contains('hidden'))return;  // 입력 중이면 건너뜀
+    if($('#editor')&&!$('#editor').classList.contains('hidden'))return;      // 식당 편집 중이면 건너뜀
+    if(Date.now()-lastAuto<10000)return;
+    lastAuto=Date.now();pullNow(true);
+  }
+  function startAutoSync(){
+    clearInterval(autoTimer);
+    autoTimer=setInterval(autoSync,30000);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)autoSync();});
+    window.addEventListener('focus',autoSync);
   }
 
   const WX={0:{t:'맑음',e:'☀️'},1:{t:'대체로 맑음',e:'🌤️'},2:{t:'구름 조금',e:'⛅'},3:{t:'흐림',e:'☁️'},
@@ -570,9 +626,12 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     if(mood==='hot')match=cat.affinity==='warm'?9:cat.affinity==='cold'?-7:1;
     if(mood==='cold')match=cat.affinity==='cold'?9:cat.affinity==='warm'?-7:1;
     return g+match-distKm(state.office,r)*(raining?2.2:0.5)+Math.random()*5;}
+  let excluded=new Set();
   function recommend(){if(!state.restaurants.length)return null;
+    let pool=state.restaurants.filter(r=>!excluded.has(r.id));
+    if(!pool.length){excluded.clear();pool=state.restaurants;}
     const mood=moodFromWeather(),raining=weather?isWet(weather.code):false;let best=null,bs=-1e9;
-    state.restaurants.forEach(r=>{let s=scoreR(r,mood,raining);if(state.restaurants.length>1&&r.id===lastPickId)s-=6;if(s>bs){bs=s;best=r;}});
+    pool.forEach(r=>{const s=scoreR(r,mood,raining);if(s>bs){bs=s;best=r;}});
     lastPickId=best.id;return best;}
 
   function renderWxMini(){const el=$('#wxMini');if(!weather){el.innerHTML='<span>날씨 못 불러옴</span>';return;}
@@ -597,7 +656,12 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
       </div></div></div>
       <div class="alm-actions"><button class="btn primary block" id="ateToday">여기서 먹었어요</button>
       <button class="btn ghost block" id="reroll">다시 뽑기</button></div>`;
-    $('#reroll').onclick=()=>renderAlmanac();
+    $('#reroll').onclick=()=>{
+      if(state.restaurants.length>1){
+        excluded.add(pick.id);
+        if(excluded.size>=state.restaurants.length){excluded.clear();toast('식당을 한 바퀴 다 돌았어요');}
+      }
+      renderAlmanac();};
     $('#ateToday').onclick=()=>logVisit(pick.id);
   }
 
@@ -1048,6 +1112,10 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     $('#gasUrl').addEventListener('keydown',e=>{if(e.key==='Enter')connectGas();});
     $('#gasPull').onclick=()=>pullNow();
     $('#gasPush').onclick=()=>pushNow();
+    $('#passOk').onclick=submitPass;
+    $('#passCancel').onclick=closePass;
+    $('#passIn').addEventListener('keydown',e=>{if(e.key==='Enter')submitPass();});
+    $('#changePass').onclick=()=>askPass('새 비밀번호를 입력해 주세요.');
     $('#pplMinus').onclick=()=>{const i=$('#logPeople');i.value=Math.max(1,(parseInt(i.value)||1)-1);updateLogHint();};
     $('#pplPlus').onclick=()=>{const i=$('#logPeople');i.value=Math.max(1,(parseInt(i.value)||1)+1);updateLogHint();};
     $('#logPeople').addEventListener('input',updateLogHint);
@@ -1074,7 +1142,7 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     load();if(!state.sort)state.sort='due';
     document.querySelectorAll('.sortbtns .chip').forEach(c=>c.classList.toggle('on',c.dataset.sort===state.sort));
     bind();renderAlmanac();renderList();fillOfficeCoord();renderOfficeState();
-    if(GAS_URL){$('#gasUrl').value=GAS_URL;setSync('연결됨 · 확인 중…');pullNow(true);}
+    if(GAS_URL){$('#gasUrl').value=GAS_URL;setSync('연결됨 · 확인 중…');pullNow(true);startAutoSync();}
     mapPlaceholder('mapToday');
     const ok=await loadKakao(KAKAO_KEY);kakaoReady=ok;renderKakaoStatus();
     if(ok)ensureMap('today');else mapPlaceholder('mapToday');
