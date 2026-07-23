@@ -32,9 +32,9 @@
   .card .sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:14px}
 
   label.fl{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px}
-  input[type=text]{width:100%;font-family:inherit;font-size:15px;padding:11px;border:1px solid var(--line-strong);
+  input[type=text],input[type=password]{width:100%;font-family:inherit;font-size:15px;padding:11px;border:1px solid var(--line-strong);
     border-radius:3px;background:var(--paper);color:var(--ink)}
-  input[type=text]:focus{outline:2px solid var(--brass);outline-offset:0}
+  input[type=text]:focus,input[type=password]:focus{outline:2px solid var(--brass);outline-offset:0}
 
   .btn{font-family:inherit;font-weight:600;font-size:14px;cursor:pointer;border-radius:3px;
     border:1px solid var(--line-strong);background:var(--card);color:var(--ink);padding:11px 15px;line-height:1;
@@ -104,7 +104,7 @@
    점심 관리 앱과 같은 주소를 넣으세요. (관리 탭에 넣은 그 주소)
    비워두면 이 기기에 저장된 값을 자동으로 씁니다.
    팀원에게 링크를 공유하려면 반드시 여기에 넣어야 해요.            */
-var GAS_URL = "";
+var GAS_URL = "https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ2NUHv4W579PImYBu-h598r3iouqsyIPVae4GRCL-SAW8zl/exec";
 </script>
 <script>
 (function(){
@@ -118,17 +118,38 @@ var GAS_URL = "";
     '중식(짜장 등)':'🥢','양식·파스타':'🍝','버거·치킨':'🍔','아시안·기타':'🌏'};
 
   let data=null,me='',timer=null,busy=false;
+  let PASS='';try{PASS=localStorage.getItem('lunch-pass')||'';}catch(e){}
   try{me=localStorage.getItem('lunch-voter')||'';}catch(e){}
 
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
   let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');
     clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1900);}
 
+  function renderPass(msg){
+    $('#app').innerHTML=`<div class="card">
+      <h2>🔒 비밀번호</h2>
+      <div class="sub">${esc(msg||'팀에서 정한 비밀번호를 입력해 주세요.')}</div>
+      <input type="password" id="passIn" placeholder="비밀번호" autocomplete="current-password">
+      <button class="btn primary block" id="passOk" style="margin-top:12px">확인</button>
+    </div>`;
+    $('#status').textContent='';
+    const go=async()=>{
+      const v=$('#passIn').value.trim();
+      if(!v){toast('비밀번호를 입력하세요');return;}
+      PASS=v;try{localStorage.setItem('lunch-pass',v);}catch(e){}
+      $('#passOk').textContent='확인 중…';await refresh();
+    };
+    $('#passOk').onclick=go;
+    $('#passIn').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+    setTimeout(()=>{const i=$('#passIn');if(i)i.focus();},80);
+  }
+
   function dateLine(){const d=new Date();
     return `${d.getFullYear()}. ${String(d.getMonth()+1).padStart(2,'0')}. ${String(d.getDate()).padStart(2,'0')} ` +
       ['일','월','화','수','목','금','토'][d.getDay()]+'요일';}
 
   async function api(payload){
+    payload.pass=PASS;
     const res=await fetch(URL_,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify(payload)});
     return await res.json();
@@ -139,6 +160,8 @@ var GAS_URL = "";
     if(!quiet)$('#status').textContent='불러오는 중…';
     try{
       const j=await api({action:'voteState'});
+      if(j&&j.error==='auth'){data=null;
+        renderPass(PASS?'비밀번호가 맞지 않아요. 다시 입력해 주세요.':'팀에서 정한 비밀번호를 입력해 주세요.');return;}
       if(!j||!j.ok)throw new Error(j&&j.error||'실패');
       data=j;render();
       $('#status').innerHTML='<span class="live"></span>실시간 · '+
