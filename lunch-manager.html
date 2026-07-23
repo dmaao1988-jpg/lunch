@@ -170,6 +170,13 @@
   .badge-ok{color:var(--jade);font-weight:700}
   .badge-bad{color:var(--red);font-weight:700}
   .hintbox{font-size:11.5px;color:var(--ink-soft);margin-top:8px;line-height:1.6;background:rgba(34,28,18,.04);padding:10px 11px;border-radius:3px}
+  .paste-box{margin-top:8px;border:1px dashed var(--line-strong);border-radius:3px;padding:11px;background:rgba(34,28,18,.03)}
+  .paste-box textarea{width:100%;min-height:110px;font-family:"IBM Plex Sans KR";font-size:13px;line-height:1.5;
+    padding:10px;border:1px solid var(--line-strong);border-radius:3px;background:var(--paper);color:var(--ink);resize:vertical}
+  .paste-box textarea:focus{outline:2px solid var(--brass);outline-offset:0}
+  .paste-box .ph{font-size:11.5px;color:var(--ink-soft);margin-bottom:7px;line-height:1.6}
+  .paste-acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center}
+  .paste-acts .cnt{font-size:11.5px;color:var(--jade);font-weight:600;margin-left:auto;font-family:"IBM Plex Mono",monospace}
   .menu-editor{margin-top:6px}
   .menu-row{display:flex;gap:8px;margin-bottom:7px}
   .menu-row input.mname{flex:1}
@@ -188,6 +195,20 @@
   .iconbtn.del:hover{color:var(--red);border-color:var(--red)}
   .settings{margin-top:24px;padding-top:16px;border-top:1px dashed var(--line-strong);display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12.5px;color:var(--ink-soft)}
 
+  .modal{position:fixed;inset:0;background:rgba(34,28,18,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:1200}
+  .modal-card{background:var(--card);border:1px solid var(--line-strong);border-radius:5px;box-shadow:var(--shadow);width:100%;max-width:340px;padding:20px}
+  .modal-card h3{font-family:"Gowun Batang",serif;font-weight:700;font-size:17px;margin:0 0 3px}
+  .modal-card .sub2{font-size:12px;color:var(--ink-soft);margin-bottom:16px}
+  .ppl{display:flex;align-items:center;gap:10px}
+  .ppl button{width:40px;height:40px;font-size:19px;border:1px solid var(--line-strong);background:var(--paper);
+    border-radius:3px;cursor:pointer;color:var(--ink);font-family:inherit;line-height:1}
+  .ppl button:active{transform:translateY(1px)}
+  .ppl input{flex:1;text-align:center;font-family:"IBM Plex Mono",monospace;font-size:17px;font-weight:600;
+    padding:9px;border:1px solid var(--line-strong);border-radius:3px;background:var(--paper);color:var(--ink)}
+  #logAmount{width:100%;font-family:"IBM Plex Mono",monospace;font-size:16px;padding:11px;
+    border:1px solid var(--line-strong);border-radius:3px;background:var(--paper);color:var(--ink)}
+  #logHint{font-size:11.5px;color:var(--jade);margin-top:6px;min-height:16px;font-weight:600}
+  .modal-acts{display:flex;gap:8px;margin-top:18px}
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);
     padding:11px 18px;border-radius:30px;font-size:13.5px;font-weight:500;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;z-index:1000}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -279,7 +300,20 @@
         <div class="field">
           <label>메뉴 + 가격</label>
           <div class="menu-editor" id="menuEditor"></div>
-          <button class="btn ghost sm" id="addMenuRow" style="margin-top:2px">＋ 메뉴 추가</button>
+          <div class="paste-acts">
+            <button class="btn ghost sm" id="addMenuRow">＋ 메뉴 추가</button>
+            <button class="btn ghost sm" id="togglePaste">📋 한번에 붙여넣기</button>
+          </div>
+          <div class="paste-box hidden" id="pasteBox">
+            <div class="ph">네이버 지도 메뉴판을 복사해서 그대로 붙여넣으세요.<br>
+              “갈비탕 17,000원” 처럼 한 줄로 된 것도 됩니다.</div>
+            <textarea id="pasteText" placeholder="여기에 붙여넣기…"></textarea>
+            <div class="paste-acts">
+              <button class="btn jade sm" id="pasteAppend">아래에 추가</button>
+              <button class="btn primary sm" id="pasteReplace">기존 지우고 교체</button>
+              <span class="cnt" id="pasteCnt"></span>
+            </div>
+          </div>
         </div>
         <div class="form-actions">
           <button class="btn primary block" id="saveRestaurant">저장</button>
@@ -302,6 +336,28 @@
   </div>
 
   <div class="foot">날씨 · Open-Meteo  /  지도·검색·길찾기 · Kakao  /  저장 · 이 브라우저</div>
+</div>
+
+<div class="modal hidden" id="logModal">
+  <div class="modal-card">
+    <h3 id="logName">식당</h3>
+    <div class="sub2">오늘 몇 명이서, 얼마 쓰셨어요?</div>
+    <div class="field"><label>인원</label>
+      <div class="ppl">
+        <button type="button" id="pplMinus">−</button>
+        <input id="logPeople" type="number" min="1" inputmode="numeric" value="1">
+        <button type="button" id="pplPlus">＋</button>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:0"><label>총 결제금액 (다 합쳐서)</label>
+      <input id="logAmount" type="text" inputmode="numeric" placeholder="총 결제금액">
+      <div id="logHint"></div>
+    </div>
+    <div class="modal-acts">
+      <button class="btn primary block" id="logSave">기록하기</button>
+      <button class="btn ghost sm" id="logCancel">취소</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -340,7 +396,11 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     const s=Math.sin(dLa/2)**2+Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(s));}
   function walkMin(km){return Math.max(1,Math.round(km*1.3/5*60));}
   function fmtDist(km){return km<1?Math.round(km*1000)+'m':km.toFixed(1)+'km';}
-  function lastVisit(r){return (r.visits&&r.visits.length)?r.visits.slice().sort().pop():null;}
+  function vDate(v){return typeof v==='string'?v:((v&&v.d)||'');}
+  function vPeople(v){const p=(v&&typeof v==='object')?v.p:null;return(p==null||p==='')?null:Number(p);}
+  function vAmount(v){const a=(v&&typeof v==='object')?v.a:null;return(a==null||a==='')?null:Number(a);}
+  function lastVisit(r){if(!r.visits||!r.visits.length)return null;
+    const ds=r.visits.map(vDate).filter(Boolean).sort();return ds.length?ds[ds.length-1]:null;}
   function daysSince(dstr){if(!dstr)return null;const a=new Date(dstr+'T00:00:00'),b=new Date(today()+'T00:00:00');return Math.round((b-a)/86400000);}
   function lastLabel(r){const lv=lastVisit(r);if(!lv)return{txt:'방문 기록 없음',d:null};const d=daysSince(lv);
     return{txt:d===0?'오늘':(d===1?'어제':`D+${d}`),d,date:lv};}
@@ -356,15 +416,27 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     const dago=n=>{const d=new Date();d.setDate(d.getDate()-n);return iso(d);};
     return{office,sort:'due',restaurants:[
       {id:id(),name:'백암순대국 (예시)',cat:'국밥·탕·찌개',address:'',...off(.001,.0016),
-        menus:[{name:'순대국밥',price:9000},{name:'내장국밥',price:9000},{name:'모둠순대',price:13000}],visits:[dago(1),dago(9),dago(16)]},
+        menus:[{name:'순대국밥',price:9000},{name:'내장국밥',price:9000},{name:'모둠순대',price:13000}],
+        visits:[{d:dago(1),p:3,a:27000},{d:dago(9),p:2,a:18000},{d:dago(16),p:4,a:40000}]},
       {id:id(),name:'평양냉면 (예시)',cat:'냉면·막국수·콩국수',address:'',...off(-.0012,.0009),
-        menus:[{name:'물냉면',price:11000},{name:'비빔냉면',price:11000},{name:'만두',price:8000}],visits:[dago(4),dago(11)]},
+        menus:[{name:'물냉면',price:11000},{name:'비빔냉면',price:11000},{name:'만두',price:8000}],
+        visits:[{d:dago(4),p:2,a:22000},{d:dago(11),p:3,a:41000}]},
       {id:id(),name:'라라파스타 (예시)',cat:'양식·파스타',address:'',...off(.0007,-.0014),
-        menus:[{name:'토마토 파스타',price:12000},{name:'크림 파스타',price:13000}],visits:[dago(6)]},
+        menus:[{name:'토마토 파스타',price:12000},{name:'크림 파스타',price:13000}],
+        visits:[{d:dago(6),p:2,a:25000}]},
     ]};
   }
+  function migrate(){
+    let changed=false;
+    (state.restaurants||[]).forEach(r=>{
+      r.visits=(r.visits||[]).map(v=>{
+        if(typeof v==='string'){changed=true;return{d:v,p:null,a:null};}
+        return v;});
+    });
+    if(changed)save();
+  }
   function load(){
-    try{const raw=localStorage.getItem(LS_KEY);if(raw){state=JSON.parse(raw);return;}}catch(e){}
+    try{const raw=localStorage.getItem(LS_KEY);if(raw){state=JSON.parse(raw);migrate();return;}}catch(e){}
     state=seed();save();
   }
   function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}}
@@ -422,7 +494,7 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
       <div class="alm-actions"><button class="btn primary block" id="ateToday">여기서 먹었어요</button>
       <button class="btn ghost block" id="reroll">다시 뽑기</button></div>`;
     $('#reroll').onclick=()=>renderAlmanac();
-    $('#ateToday').onclick=()=>{logVisit(pick.id);toast(`${pick.name} · 오늘 방문 기록됨`);};
+    $('#ateToday').onclick=()=>logVisit(pick.id);
   }
 
   function renderList(){
@@ -444,29 +516,71 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
         <div class="r-actions"><button class="btn jade sm" data-ate="${r.id}">먹었어요</button>
         <a class="btn kakao sm km" href="${kakaoDir(r)}" target="_blank" rel="noopener">🗺 길찾기</a></div></div>`;
     }).join('');
-    el.querySelectorAll('[data-ate]').forEach(b=>b.onclick=()=>{logVisit(b.dataset.ate);toast('오늘 방문 기록됨');});
+    el.querySelectorAll('[data-ate]').forEach(b=>b.onclick=()=>logVisit(b.dataset.ate));
     el.querySelectorAll('[data-undo]').forEach(b=>b.onclick=()=>undoVisit(b.dataset.undo));
   }
 
-  function logVisit(rid){const r=state.restaurants.find(x=>x.id===rid);if(!r)return;r.visits=r.visits||[];
-    const t=today();if(!r.visits.includes(t))r.visits.push(t);save();refreshAll();}
-  function undoVisit(rid){const r=state.restaurants.find(x=>x.id===rid);if(!r||!r.visits.length)return;
-    r.visits.sort();r.visits.pop();save();refreshAll();toast('최근 방문 기록 삭제');}
+  let logTarget=null;
+  function openLog(rid){
+    const r=state.restaurants.find(x=>x.id===rid);if(!r)return;
+    logTarget=rid;
+    const est=Math.round(avgPrice(r))||0;
+    $('#logName').textContent=r.name;
+    $('#logPeople').value=state.lastPeople||1;
+    $('#logAmount').value='';
+    $('#logAmount').placeholder=est?`예: ${est.toLocaleString('ko-KR')} (1인 기준)`:'총 결제금액';
+    updateLogHint();
+    $('#logModal').classList.remove('hidden');
+    setTimeout(()=>$('#logAmount').focus(),80);
+  }
+  function updateLogHint(){
+    const p=Math.max(1,parseInt($('#logPeople').value)||1);
+    const a=Number(String($('#logAmount').value).replace(/[^0-9]/g,''));
+    $('#logHint').textContent=(a>0)?`1인당 약 ${won(Math.round(a/p))}`:'금액을 비워두면 메뉴 평균가로 추정해요';
+  }
+  function closeLog(){$('#logModal').classList.add('hidden');logTarget=null;}
+  function confirmLog(){
+    const r=state.restaurants.find(x=>x.id===logTarget);if(!r){closeLog();return;}
+    const p=Math.max(1,parseInt($('#logPeople').value)||1);
+    const raw=String($('#logAmount').value).replace(/[^0-9]/g,'');
+    const a=raw===''?null:Number(raw);
+    r.visits=r.visits||[];
+    const t=today();
+    const ex=r.visits.find(v=>vDate(v)===t);
+    if(ex){ex.p=p;ex.a=a;}else r.visits.push({d:t,p,a});
+    state.lastPeople=p;
+    save();closeLog();refreshAll();
+    toast(`${r.name} · ${p}명${a?' · '+won(a):''} 기록됨`);
+  }
+  function logVisit(rid){openLog(rid);}
+  function undoVisit(rid){const r=state.restaurants.find(x=>x.id===rid);if(!r||!r.visits||!r.visits.length)return;
+    r.visits.sort((a,b)=>vDate(a)<vDate(b)?-1:1);r.visits.pop();save();refreshAll();toast('최근 방문 기록 삭제');}
 
   /* ===== 통계 ===== */
   function inRange(dstr,range){const d=new Date(dstr+'T00:00:00'),now=new Date();
     if(range==='month')return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
     if(range==='30'){const s=new Date();s.setDate(s.getDate()-29);s.setHours(0,0,0,0);return d>=s;}
     return true;}
-  function statsFor(range){const per=state.restaurants.map(r=>{const cnt=(r.visits||[]).filter(v=>inRange(v,range)).length;
-    const avg=avgPrice(r);return{r,cnt,spend:cnt*avg,avg};});
-    return{per,totalVisits:per.reduce((s,x)=>s+x.cnt,0),totalSpend:per.reduce((s,x)=>s+x.spend,0)};}
+  function statsFor(range){const per=state.restaurants.map(r=>{
+      const vs=(r.visits||[]).filter(v=>inRange(vDate(v),range));
+      const avg=avgPrice(r);let spend=0,people=0,est=false;
+      vs.forEach(v=>{const a=vAmount(v),p=vPeople(v)||1;people+=p;
+        if(a!=null)spend+=a;else{spend+=avg*p;est=true;}});
+      return{r,cnt:vs.length,spend,people,avg,est};});
+    return{per,
+      totalVisits:per.reduce((s,x)=>s+x.cnt,0),
+      totalSpend:per.reduce((s,x)=>s+x.spend,0),
+      totalPeople:per.reduce((s,x)=>s+x.people,0),
+      hasEst:per.some(x=>x.est&&x.cnt)};}
   function affinityCounts(range){const c={warm:0,cold:0,neutral:0};
-    state.restaurants.forEach(r=>{const aff=(catBy[r.cat]||{}).affinity||'neutral';c[aff]+=(r.visits||[]).filter(v=>inRange(v,range)).length;});return c;}
+    state.restaurants.forEach(r=>{const aff=(catBy[r.cat]||{}).affinity||'neutral';
+      c[aff]+=(r.visits||[]).filter(v=>inRange(vDate(v),range)).length;});return c;}
   function weekdayCounts(range){const c=[0,0,0,0,0,0,0];
-    state.restaurants.forEach(r=>(r.visits||[]).forEach(v=>{if(inRange(v,range)){c[new Date(v+'T00:00:00').getDay()]++;}}));return c;}
+    state.restaurants.forEach(r=>(r.visits||[]).forEach(v=>{const d=vDate(v);
+      if(d&&inRange(d,range))c[new Date(d+'T00:00:00').getDay()]++;}));return c;}
   function monthCount(offset){const now=new Date(),t=new Date(now.getFullYear(),now.getMonth()+offset,1);
-    return state.restaurants.reduce((s,r)=>s+(r.visits||[]).filter(v=>{const d=new Date(v+'T00:00:00');
+    return state.restaurants.reduce((s,r)=>s+(r.visits||[]).filter(v=>{const ds=vDate(v);if(!ds)return false;
+      const d=new Date(ds+'T00:00:00');
       return d.getFullYear()===t.getFullYear()&&d.getMonth()===t.getMonth();}).length,0);}
   function barRow(label,valTxt,frac,red){return `<div class="bar-row"><span class="bl">${label}</span>
     <span class="bt"><span class="bf ${red?'red':''}" style="width:${Math.max(2,Math.round(frac*100))}%"></span></span>
@@ -474,15 +588,19 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
 
   function renderStats(){
     const el=$('#statsBody'),range=statsRange;
-    const {per,totalVisits,totalSpend}=statsFor(range);
-    const avgMeal=totalVisits?totalSpend/totalVisits:0;
+    const {per,totalVisits,totalSpend,totalPeople,hasEst}=statsFor(range);
+    const avgMeal=totalPeople?totalSpend/totalPeople:0;
     const rangeLabel=range==='month'?'이번 달':range==='30'?'최근 30일':'전체 기간';
 
     let html=`<div class="stat-tiles">
       <div class="stat-tile"><div class="num red">${totalVisits}<span class="unit">회</span></div><div class="lbl">${rangeLabel} 외식</div></div>
-      <div class="stat-tile"><div class="num">${totalSpend?Math.round(totalSpend/1000):0}<span class="unit">천원</span></div><div class="lbl">예상 지출</div></div>
-      <div class="stat-tile"><div class="num">${avgMeal?Math.round(avgMeal/100)/10:0}<span class="unit">천원</span></div><div class="lbl">끼당 평균</div></div>
-    </div>`;
+      <div class="stat-tile"><div class="num">${totalPeople}<span class="unit">명</span></div><div class="lbl">누적 인원</div></div>
+      <div class="stat-tile"><div class="num">${totalSpend?Math.round(totalSpend/1000):0}<span class="unit">천원</span></div><div class="lbl">총 지출</div></div>
+    </div>
+    <div class="statblock" style="padding:13px 16px"><div class="mom">
+      <span class="sub">1인당 평균</span><span class="big">${avgMeal?Math.round(avgMeal).toLocaleString('ko-KR'):0}원</span>
+      <span class="sub">한 끼 평균 ${totalVisits?Math.round(totalPeople/totalVisits*10)/10:0}명</span></div>
+      ${hasEst?'<div style="font-size:11px;color:var(--ink-soft);margin-top:7px">※ 금액 미입력 방문은 메뉴 평균가로 추정했어요</div>':''}</div>`;
 
     const cm=monthCount(0),lm=monthCount(-1),diff=cm-lm;
     const dcls=diff>0?'up':diff<0?'down':'same',dtxt=diff>0?`▲ ${diff}`:diff<0?`▼ ${-diff}`:'변화 없음';
@@ -651,6 +769,41 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
       <button class="mdel" title="삭제">×</button></div>`;}
   function addMenuRow(m){const wrap=$('#menuEditor');wrap.insertAdjacentHTML('beforeend',menuRowHtml(m));
     const row=wrap.lastElementChild;row.querySelector('.mdel').onclick=()=>row.remove();}
+  function parseMenus(text){
+    if(!text)return[];
+    let t=text.replace(/\[([^\]]*)\]\([^)]*\)/g,'$1');           // 마크다운 링크 → 글자만
+    t=t.replace(/<[^>]+>/g,' ');                                  // 혹시 섞인 태그 제거
+    const lines=t.split(/\r?\n/).map(l=>l
+      .replace(/^\s*[-*•·▪]\s+/,'')                               // 불릿 제거
+      .replace(/^\s*\d+[.)]\s+/,'')                               // 1. 2) 제거
+      .trim()).filter(Boolean);
+    const priceOnly=/^([0-9][0-9,]{2,})\s*원?$/;
+    const inline=/^(.+?)[\s:·\-—~]+([0-9][0-9,]{2,})\s*원?$/;
+    const out=[];let pending=null;
+    const push=(name,price)=>{name=(name||'').replace(/\s{2,}/g,' ').trim();
+      if(name&&!/^(가격|메뉴|원)$/.test(name))out.push({name,price});};
+    for(const ln of lines){
+      const p=ln.match(priceOnly);
+      if(p){if(pending){push(pending,Number(p[1].replace(/,/g,'')));pending=null;}continue;}
+      const m=ln.match(inline);
+      if(m){if(pending){push(pending,null);pending=null;}push(m[1],Number(m[2].replace(/,/g,'')));continue;}
+      if(pending)push(pending,null);
+      pending=ln;
+    }
+    if(pending)push(pending,null);
+    const seen=new Set();
+    return out.filter(m=>{const k=m.name+'|'+m.price;if(seen.has(k))return false;seen.add(k);return true;});
+  }
+  function applyPaste(replace){
+    const list=parseMenus($('#pasteText').value);
+    if(!list.length){toast('읽어낼 메뉴가 없어요');return;}
+    if(replace)$('#menuEditor').innerHTML='';
+    else{const rows=[...document.querySelectorAll('#menuEditor .menu-row')];
+      rows.forEach(r=>{if(!r.querySelector('.mname').value.trim())r.remove();});}
+    list.forEach(m=>addMenuRow(m));
+    $('#pasteCnt').textContent=`${list.length}개 반영됨`;
+    $('#pasteText').value='';toast(`메뉴 ${list.length}개 ${replace?'교체':'추가'}됨`);
+  }
   function collectMenus(){return[...document.querySelectorAll('#menuEditor .menu-row')].map(row=>{
     const name=row.querySelector('.mname').value.trim();const pv=row.querySelector('.mprice').value.trim();
     return{name,price:pv===''?null:Number(pv)};}).filter(m=>m.name);}
@@ -664,6 +817,7 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     $('#eLat').value=r?r.lat:'';$('#eLng').value=r?r.lng:'';draft.address=r?(r.address||''):'';$('#eAddr').textContent=draft.address||'미지정';
     $('#menuEditor').innerHTML='';(r&&r.menus&&r.menus.length?r.menus:[{name:'',price:''}]).forEach(m=>addMenuRow(m));
     $('#eResults').classList.remove('show');$('#eSearch').value='';$('#editor').classList.remove('hidden');
+    $('#pasteBox').classList.add('hidden');$('#pasteText').value='';$('#pasteCnt').textContent='';
     if(draftMk){draftMk.setMap(null);draftMk=null;}
     if(r&&kakaoReady&&kmapAdmin)setDraftMarker(r.lat,r.lng);
     $('#editor').scrollIntoView({behavior:'smooth',block:'start'});}
@@ -719,11 +873,27 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     $('#offPickMap').onclick=()=>{if(!kakaoReady){toast('지도 연결 후 사용할 수 있어요');return;}mapMode='office';setHint('👉 지도를 눌러 회사 위치를 지정하세요');scrollToAdminMap();};
 
     $('#newRestaurant').onclick=()=>openEditor(null);$('#cancelEdit').onclick=closeEditor;$('#saveRestaurant').onclick=saveRestaurant;$('#addMenuRow').onclick=()=>addMenuRow();
+    $('#togglePaste').onclick=()=>{const b=$('#pasteBox');b.classList.toggle('hidden');
+      if(!b.classList.contains('hidden'))$('#pasteText').focus();};
+    $('#pasteAppend').onclick=()=>applyPaste(false);
+    $('#pasteReplace').onclick=()=>applyPaste(true);
+    $('#pasteText').addEventListener('input',()=>{const n=parseMenus($('#pasteText').value).length;
+      $('#pasteCnt').textContent=n?`${n}개 인식됨`:'';});
     $('#eSearchBtn').onclick=()=>runSearch('#eSearch','#eResults',onEditorPick);
     $('#eSearch').addEventListener('keydown',e=>{if(e.key==='Enter')$('#eSearchBtn').click();});
     $('#ePickMap').onclick=()=>{if(!kakaoReady){toast('지도 연결 후 사용할 수 있어요');return;}mapMode='restaurant';setHint('👉 지도를 눌러 가게 위치를 찍으세요');scrollToAdminMap();};
 
     $('#exportData').onclick=exportData;
+    $('#pplMinus').onclick=()=>{const i=$('#logPeople');i.value=Math.max(1,(parseInt(i.value)||1)-1);updateLogHint();};
+    $('#pplPlus').onclick=()=>{const i=$('#logPeople');i.value=Math.max(1,(parseInt(i.value)||1)+1);updateLogHint();};
+    $('#logPeople').addEventListener('input',updateLogHint);
+    $('#logAmount').addEventListener('input',e=>{
+      const raw=e.target.value.replace(/[^0-9]/g,'');
+      e.target.value=raw?Number(raw).toLocaleString('ko-KR'):'';updateLogHint();});
+    $('#logAmount').addEventListener('keydown',e=>{if(e.key==='Enter')confirmLog();});
+    $('#logSave').onclick=confirmLog;
+    $('#logCancel').onclick=closeLog;
+    $('#logModal').addEventListener('click',e=>{if(e.target===$('#logModal'))closeLog();});
     $('#resetAll').onclick=()=>{if(confirm('모든 식당·기록·설정을 지우고 처음 상태로 되돌릴까요?')){
       state=seed();save();renderOfficeState();fillOfficeCoord();renderAdminList();refreshAll();
       if(kakaoReady){drawKakao('admin');drawKakao('today');}fetchWeather();toast('초기화 완료');}};
