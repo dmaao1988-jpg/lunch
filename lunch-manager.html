@@ -195,6 +195,24 @@
   .iconbtn.del:hover{color:var(--red);border-color:var(--red)}
   .settings{margin-top:24px;padding-top:16px;border-top:1px dashed var(--line-strong);display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12.5px;color:var(--ink-soft)}
 
+  .rwrap{display:flex;flex-direction:column}
+  .menu-chip{border:1px solid var(--line);background:transparent;color:var(--ink-soft);font-family:inherit;
+    font-size:11.5px;padding:2px 8px;border-radius:20px;cursor:pointer;line-height:1.6}
+  .menu-chip:hover{border-color:var(--jade);color:var(--jade)}
+  .rmenus{background:var(--paper);border:1px solid var(--line);border-top:none;border-radius:0 0 4px 4px;
+    padding:11px 14px;margin-top:-1px}
+  .rmenus .mrow{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:4px 0;border-bottom:1px dotted var(--line)}
+  .rmenus .mrow:last-child{border-bottom:none}
+  .rmenus .mrow .mp{font-family:"IBM Plex Mono",monospace;color:var(--ink-soft);flex-shrink:0}
+  .rmenus .none{font-size:12.5px;color:var(--ink-soft);text-align:center;padding:4px 0}
+  .vlog{display:flex;flex-direction:column;gap:7px;margin-top:12px;max-height:420px;overflow-y:auto}
+  .vrow{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);
+    border-radius:4px;padding:10px 12px;cursor:pointer}
+  .vrow:hover{border-color:var(--jade)}
+  .vrow .vd{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-soft);width:52px;flex-shrink:0}
+  .vrow .vn{flex:1;min-width:0;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vrow .vm{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink);flex-shrink:0}
+  .vrow .vm .na{color:var(--red)}
   .modal{position:fixed;inset:0;background:rgba(34,28,18,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:1200}
   .modal-card{background:var(--card);border:1px solid var(--line-strong);border-radius:5px;box-shadow:var(--shadow);width:100%;max-width:340px;padding:20px}
   .modal-card h3{font-family:"Gowun Batang",serif;font-weight:700;font-size:17px;margin:0 0 3px}
@@ -232,6 +250,7 @@
 
   <div class="view on" id="viewToday">
     <div class="almanac" id="almanac"></div>
+    <a class="btn kakao block" href="./vote.html" style="margin-top:12px;background:var(--jade);border-color:var(--jade);color:#fff">🗳 팀원들과 투표해서 정하기</a>
     <div class="sec">
       <div class="sec-head">
         <div class="sec-title"><span class="eyebrow">list</span><h2>우리 회사 식당</h2></div>
@@ -344,6 +363,15 @@
     </div>
 
     <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title"><span class="eyebrow">log</span><h2>방문 기록</h2></div>
+        <button class="btn primary sm" id="addVisit">＋ 기록 추가</button>
+      </div>
+      <div class="vlog" id="vlog"></div>
+      <button class="btn ghost sm hidden" id="vlogMore" style="margin-top:9px;width:100%">더 보기</button>
+    </div>
+
+    <div class="sec">
       <div class="sec-head"><div class="sec-title"><span class="eyebrow">map</span><h2>지도에서 찍기</h2></div></div>
       <div id="mapAdmin"></div>
       <div class="map-hint" id="mapHint"></div>
@@ -360,8 +388,10 @@
 
 <div class="modal hidden" id="logModal">
   <div class="modal-card">
-    <h3 id="logName">식당</h3>
-    <div class="sub2">오늘 몇 명이서, 얼마 쓰셨어요?</div>
+    <h3 id="logTitle">점심 기록</h3>
+    <div class="sub2" id="logSub">몇 명이서, 얼마 쓰셨어요?</div>
+    <div class="field"><label>식당</label><select id="logRest"></select></div>
+    <div class="field"><label>날짜</label><input id="logDate" type="date"></div>
     <div class="field"><label>인원</label>
       <div class="ppl">
         <button type="button" id="pplMinus">−</button>
@@ -374,7 +404,8 @@
       <div id="logHint"></div>
     </div>
     <div class="modal-acts">
-      <button class="btn primary block" id="logSave">기록하기</button>
+      <button class="btn primary block" id="logSave">저장</button>
+      <button class="btn ghost sm hidden" id="logDelete" style="color:var(--red);border-color:rgba(211,56,42,.4)">삭제</button>
       <button class="btn ghost sm" id="logCancel">취소</button>
     </div>
   </div>
@@ -582,50 +613,106 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
       const lastTxt=ll.d===null?'기록 없음':`${ll.txt}${ll.date?` (${ll.date.slice(5)})`:''}`;
       const undo=ll.d!==null?`<button class="undo" data-undo="${r.id}">취소</button>`:'';
       const pr=priceRange(r);const prTxt=pr?`<span class="r-price">${pr}</span>`:'';
-      return `<div class="rcard ${fresh}"><div class="r-emoji">${cat.emoji}</div>
+      const mc=(r.menus||[]).length;
+      const mchip=mc?`<button class="menu-chip" data-menu="${r.id}">메뉴 ${mc} ▾</button>`:'';
+      const mlist=mc?(r.menus.map(m=>`<div class="mrow"><span>${esc(m.name)}</span><span class="mp">${m.price!=null?won(m.price):'—'}</span></div>`).join('')):'<div class="none">등록된 메뉴가 없어요</div>';
+      return `<div class="rwrap"><div class="rcard ${fresh}"><div class="r-emoji">${cat.emoji}</div>
         <div class="r-body"><div class="r-name">${esc(r.name)} ${aff} ${due}</div>
         <div class="r-metaline"><span class="r-dist">${fmtDist(km)} · 도보 ${walkMin(km)}분</span>${prTxt}
-        <span class="r-last">🕘 ${lastTxt}</span>${undo}</div></div>
+        <span class="r-last">🕘 ${lastTxt}</span>${mchip}${undo}</div></div>
         <div class="r-actions"><button class="btn jade sm" data-ate="${r.id}">먹었어요</button>
-        <a class="btn kakao sm km" href="${kakaoDir(r)}" target="_blank" rel="noopener">🗺 길찾기</a></div></div>`;
+        <a class="btn kakao sm km" href="${kakaoDir(r)}" target="_blank" rel="noopener">🗺 길찾기</a></div></div>
+        <div class="rmenus hidden" id="mn-${r.id}">${mlist}</div></div>`;
     }).join('');
+    el.querySelectorAll('[data-menu]').forEach(b=>b.onclick=()=>{
+      const box=document.getElementById('mn-'+b.dataset.menu);
+      const open=box.classList.toggle('hidden');
+      b.textContent=`메뉴 ${(state.restaurants.find(x=>x.id===b.dataset.menu).menus||[]).length} ${open?'▾':'▴'}`;});
     el.querySelectorAll('[data-ate]').forEach(b=>b.onclick=()=>logVisit(b.dataset.ate));
     el.querySelectorAll('[data-undo]').forEach(b=>b.onclick=()=>undoVisit(b.dataset.undo));
   }
 
-  let logTarget=null;
-  function openLog(rid){
-    const r=state.restaurants.find(x=>x.id===rid);if(!r)return;
-    logTarget=rid;
-    const est=Math.round(avgPrice(r))||0;
-    $('#logName').textContent=r.name;
-    $('#logPeople').value=state.lastPeople||1;
-    $('#logAmount').value='';
+  let logTarget=null,logOrigDate=null;
+  function openLog(rid,editDate){
+    if(!state.restaurants.length){toast('먼저 식당을 등록해 주세요');return;}
+    logTarget=rid||null;logOrigDate=editDate||null;
+    const sel=$('#logRest');
+    sel.innerHTML=state.restaurants.map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join('');
+    if(rid)sel.value=rid;
+    const r=state.restaurants.find(x=>x.id===sel.value);
+    const editing=!!(rid&&editDate);
+    let cur=null;
+    if(editing&&r)cur=(r.visits||[]).find(v=>vDate(v)===editDate);
+    $('#logTitle').textContent=editing?'기록 수정':'점심 기록';
+    $('#logSub').textContent=editing?'날짜·인원·금액을 고칠 수 있어요':'몇 명이서, 얼마 쓰셨어요?';
+    $('#logDelete').classList.toggle('hidden',!editing);
+    $('#logDate').value=editDate||today();
+    $('#logPeople').value=cur?(vPeople(cur)||1):(state.lastPeople||1);
+    const amt=cur?vAmount(cur):null;
+    $('#logAmount').value=amt!=null?Number(amt).toLocaleString('ko-KR'):'';
+    const est=r?Math.round(avgPrice(r)):0;
     $('#logAmount').placeholder=est?`예: ${est.toLocaleString('ko-KR')} (1인 기준)`:'총 결제금액';
     updateLogHint();
     $('#logModal').classList.remove('hidden');
-    setTimeout(()=>$('#logAmount').focus(),80);
+    if(!editing)setTimeout(()=>$('#logAmount').focus(),80);
   }
   function updateLogHint(){
     const p=Math.max(1,parseInt($('#logPeople').value)||1);
     const a=Number(String($('#logAmount').value).replace(/[^0-9]/g,''));
     $('#logHint').textContent=(a>0)?`1인당 약 ${won(Math.round(a/p))}`:'금액을 비워두면 메뉴 평균가로 추정해요';
   }
-  function closeLog(){$('#logModal').classList.add('hidden');logTarget=null;}
+  function closeLog(){$('#logModal').classList.add('hidden');logTarget=null;logOrigDate=null;}
   function confirmLog(){
-    const r=state.restaurants.find(x=>x.id===logTarget);if(!r){closeLog();return;}
+    const rid=$('#logRest').value;
+    const r=state.restaurants.find(x=>x.id===rid);
+    if(!r){closeLog();return;}
+    const d=$('#logDate').value||today();
     const p=Math.max(1,parseInt($('#logPeople').value)||1);
     const raw=String($('#logAmount').value).replace(/[^0-9]/g,'');
     const a=raw===''?null:Number(raw);
+    if(logOrigDate&&logTarget){
+      const orig=state.restaurants.find(x=>x.id===logTarget);
+      if(orig)orig.visits=(orig.visits||[]).filter(v=>vDate(v)!==logOrigDate);
+    }
     r.visits=r.visits||[];
-    const t=today();
-    const ex=r.visits.find(v=>vDate(v)===t);
-    if(ex){ex.p=p;ex.a=a;}else r.visits.push({d:t,p,a});
+    const ex=r.visits.find(v=>vDate(v)===d);
+    if(ex){ex.p=p;ex.a=a;}else r.visits.push({d,p,a});
     state.lastPeople=p;
-    save();closeLog();refreshAll();
-    toast(`${r.name} · ${p}명${a?' · '+won(a):''} 기록됨`);
+    const wasEdit=!!logOrigDate;
+    save();closeLog();refreshAll();renderVisitLog();
+    toast(wasEdit?'기록 수정됨':`${r.name} · ${p}명${a?' · '+won(a):''} 기록됨`);
+  }
+  function deleteLog(){
+    if(!logTarget||!logOrigDate){closeLog();return;}
+    const r=state.restaurants.find(x=>x.id===logTarget);
+    if(r)r.visits=(r.visits||[]).filter(v=>vDate(v)!==logOrigDate);
+    save();closeLog();refreshAll();renderVisitLog();toast('기록 삭제됨');
   }
   function logVisit(rid){openLog(rid);}
+
+  /* 방문 기록 목록 */
+  let vlogLimit=30;
+  function renderVisitLog(){
+    const el=$('#vlog');if(!el)return;
+    const rows=[];
+    state.restaurants.forEach(r=>(r.visits||[]).forEach(v=>{
+      const d=vDate(v);if(d)rows.push({d,r,p:vPeople(v),a:vAmount(v)});}));
+    rows.sort((x,y)=>x.d<y.d?1:-1);
+    const total=rows.length;
+    const show=rows.slice(0,vlogLimit);
+    if(!total){el.innerHTML=`<div style="color:var(--ink-soft);font-size:13px;padding:6px 2px">아직 기록이 없어요.</div>`;
+      $('#vlogMore').classList.add('hidden');return;}
+    el.innerHTML=show.map(x=>{const cat=catBy[x.r.cat]||{emoji:'🍽️'};
+      const amt=x.a!=null?won(x.a):'<span class="na">미입력</span>';
+      return `<div class="vrow" data-vr="${x.r.id}" data-vd="${x.d}">
+        <span class="vd">${x.d.slice(5)}</span>
+        <span class="vn">${cat.emoji} ${esc(x.r.name)}</span>
+        <span class="vm">${x.p||1}명 · ${amt}</span></div>`;}).join('');
+    el.querySelectorAll('[data-vr]').forEach(b=>b.onclick=()=>openLog(b.dataset.vr,b.dataset.vd));
+    const more=$('#vlogMore');
+    more.classList.toggle('hidden',total<=vlogLimit);
+    more.textContent=`더 보기 (${total-vlogLimit}개 남음)`;
+  }
   function undoVisit(rid){const r=state.restaurants.find(x=>x.id===rid);if(!r||!r.visits||!r.visits.length)return;
     r.visits.sort((a,b)=>vDate(a)<vDate(b)?-1:1);r.visits.pop();save();refreshAll();toast('최근 방문 기록 삭제');}
 
@@ -920,7 +1007,7 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     $('#view'+name).classList.add('on');$('#tab'+name).classList.add('on');
     if(name==='Today'){if(kakaoReady)ensureMap('today');else mapPlaceholder('mapToday');}
     if(name==='Stats')renderStats();
-    if(name==='Admin'){renderOfficeState();fillOfficeCoord();renderAdminList();renderKakaoStatus();
+    if(name==='Admin'){renderOfficeState();fillOfficeCoord();renderAdminList();renderKakaoStatus();renderVisitLog();
       if(kakaoReady)ensureMap('admin');else mapPlaceholder('mapAdmin');}}
 
   function refreshAll(){renderAlmanac();renderList();if(kakaoReady&&kmapToday)drawKakao('today');if($('#viewStats').classList.contains('on'))renderStats();}
@@ -969,6 +1056,13 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
       e.target.value=raw?Number(raw).toLocaleString('ko-KR'):'';updateLogHint();});
     $('#logAmount').addEventListener('keydown',e=>{if(e.key==='Enter')confirmLog();});
     $('#logSave').onclick=confirmLog;
+    $('#logDelete').onclick=deleteLog;
+    $('#logRest').addEventListener('change',()=>{
+      const r=state.restaurants.find(x=>x.id===$('#logRest').value);
+      const est=r?Math.round(avgPrice(r)):0;
+      $('#logAmount').placeholder=est?`예: ${est.toLocaleString('ko-KR')} (1인 기준)`:'총 결제금액';});
+    $('#addVisit').onclick=()=>openLog(null,null);
+    $('#vlogMore').onclick=()=>{vlogLimit+=30;renderVisitLog();};
     $('#logCancel').onclick=closeLog;
     $('#logModal').addEventListener('click',e=>{if(e.target===$('#logModal'))closeLog();});
     $('#resetAll').onclick=()=>{if(confirm('모든 식당·기록·설정을 지우고 처음 상태로 되돌릴까요?')){
