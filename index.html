@@ -946,15 +946,16 @@ var GAS_DEFAULT = "https://script.google.com/macros/s/AKfycbxYopSOt0xcEE3x2fkXkZ
     const el=$('#statsBody'),range=statsRange;
     const{per,totalVisits,totalSpend,totalPeople,hasEst}=statsFor(range);
     const avgMeal=totalPeople?totalSpend/totalPeople:0;
+    const avgPpl=totalVisits?totalPeople/totalVisits:0;
     const rl=range==='month'?'이번 달':range==='30'?'최근 30일':'전체 기간';
     let h=`<div class="tiles">
       <div class="tile"><div class="n g">${totalVisits}<span class="u">회</span></div><div class="l">${rl} 외식</div></div>
-      <div class="tile"><div class="n">${totalPeople}<span class="u">명</span></div><div class="l">누적 인원</div></div>
+      <div class="tile"><div class="n">${Math.round(avgPpl*10)/10}<span class="u">명</span></div><div class="l">평균 인원</div></div>
       <div class="tile"><div class="n money">${Math.round(totalSpend).toLocaleString('ko-KR')}<span class="u">원</span></div><div class="l">총 지출</div></div>
     </div>
     <div class="panel"><div class="mom"><span>1인당 평균</span>
       <span class="big">${Math.round(avgMeal).toLocaleString('ko-KR')}원</span>
-      <span>한 끼 평균 ${totalVisits?Math.round(totalPeople/totalVisits*10)/10:0}명</span></div>
+      <span>누적 ${totalPeople}명 참여</span></div>
       ${hasEst?'<div style="font-size:11px;color:var(--ink-3);margin-top:7px">※ 금액 미입력 방문은 메뉴 평균가로 추정</div>':''}</div>`;
 
     const cm=monthCount(0),lm=monthCount(-1),df=cm-lm;
