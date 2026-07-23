@@ -259,6 +259,26 @@
 
   <div class="view" id="viewAdmin">
     <div class="sec" style="margin-top:4px">
+      <div class="sec-head"><div class="sec-title"><span class="eyebrow">cloud</span><h2>구글시트 저장</h2></div></div>
+      <div class="adm-card">
+        <div class="field">
+          <label>Apps Script 웹앱 주소</label>
+          <div class="searchrow">
+            <input id="gasUrl" type="text" placeholder="https://script.google.com/macros/s/..../exec" autocomplete="off">
+            <button class="btn jade sm" id="gasSave">연결</button>
+          </div>
+          <div class="loc-state" id="syncStatus">동기화: 꺼짐 · 이 기기에만 저장돼요</div>
+        </div>
+        <div class="paste-acts">
+          <button class="btn ghost sm" id="gasPull">↓ 시트에서 불러오기</button>
+          <button class="btn ghost sm" id="gasPush">↑ 시트로 올리기</button>
+        </div>
+        <div class="hintbox">연결하면 기록이 구글시트에 저장돼서 폰·PC 어디서 열어도 같은 데이터를 봐요.<br>
+          시트에서 값을 직접 고친 뒤에는 <b>↓ 시트에서 불러오기</b>를 눌러 반영하세요.</div>
+      </div>
+    </div>
+
+    <div class="sec">
       <div class="sec-head"><div class="sec-title"><span class="eyebrow">office</span><h2>회사 위치</h2></div></div>
       <div class="adm-card">
         <div class="field">
@@ -439,7 +459,60 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     try{const raw=localStorage.getItem(LS_KEY);if(raw){state=JSON.parse(raw);migrate();return;}}catch(e){}
     state=seed();save();
   }
-  function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}}
+  function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}schedulePush();}
+
+  /* ===== 구글시트 동기화 ===== */
+  const GAS_LS='lunch-gas-url';
+  let GAS_URL='';try{GAS_URL=localStorage.getItem(GAS_LS)||'';}catch(e){}
+  let pushTimer=null,suppressPush=false;
+  function nowHM(){return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}
+  function setSync(msg,cls){const el=$('#syncStatus');if(el)el.innerHTML='동기화: <span class="'+(cls||'')+'">'+esc(msg)+'</span>';}
+  function schedulePush(){
+    if(!GAS_URL||suppressPush)return;
+    clearTimeout(pushTimer);pushTimer=setTimeout(pushNow,1500);
+  }
+  async function pushNow(quiet){
+    if(!GAS_URL){if(!quiet)toast('먼저 시트 주소를 연결하세요');return;}
+    setSync('저장 중…');
+    try{
+      const res=await fetch(GAS_URL,{method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({action:'save',state})});
+      const j=await res.json();
+      if(j&&j.ok){setSync(nowHM()+' 저장됨','badge-ok');if(!quiet)toast('시트에 저장했어요');}
+      else{setSync('저장 실패','badge-bad');if(!quiet)toast('저장 실패 · 주소를 확인하세요');}
+    }catch(e){setSync('저장 실패 (연결 안 됨)','badge-bad');if(!quiet)toast('연결 실패 · 주소를 확인하세요');}
+  }
+  async function pullNow(quiet){
+    if(!GAS_URL){if(!quiet)toast('먼저 시트 주소를 연결하세요');return;}
+    setSync('불러오는 중…');
+    try{
+      const res=await fetch(GAS_URL,{method:'GET'});
+      const j=await res.json();
+      if(!j||!j.ok||!j.state){setSync('불러오기 실패','badge-bad');if(!quiet)toast('불러오기 실패');return;}
+      const remote=j.state,rc=(remote.restaurants||[]).length;
+      if(rc===0&&state.restaurants.length>0){
+        setSync('시트가 비어 있어 올리는 중…');await pushNow(true);
+        if(!quiet)toast('시트가 비어 있어서 이 기기 데이터를 올렸어요');return;
+      }
+      suppressPush=true;
+      state=remote;if(!state.sort)state.sort='due';
+      migrate();save();
+      suppressPush=false;
+      refreshAll();renderOfficeState();fillOfficeCoord();renderAdminList();
+      if(kakaoReady){drawKakao('today');drawKakao('admin');}
+      setSync(nowHM()+' 불러옴','badge-ok');
+      if(!quiet)toast(`시트에서 식당 ${rc}곳을 불러왔어요`);
+    }catch(e){setSync('불러오기 실패 (연결 안 됨)','badge-bad');if(!quiet)toast('연결 실패 · 주소를 확인하세요');}
+  }
+  function connectGas(){
+    const u=$('#gasUrl').value.trim();
+    if(!u){toast('주소를 입력하세요');return;}
+    if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec/.test(u)){
+      toast('/exec 로 끝나는 웹앱 주소여야 해요');return;}
+    GAS_URL=u;try{localStorage.setItem(GAS_LS,u);}catch(e){}
+    toast('연결됨 · 시트를 확인하는 중');pullNow();
+  }
 
   const WX={0:{t:'맑음',e:'☀️'},1:{t:'대체로 맑음',e:'🌤️'},2:{t:'구름 조금',e:'⛅'},3:{t:'흐림',e:'☁️'},
     45:{t:'안개',e:'🌫️'},48:{t:'짙은 안개',e:'🌫️'},51:{t:'이슬비',e:'🌦️'},53:{t:'이슬비',e:'🌦️'},55:{t:'이슬비',e:'🌦️'},
@@ -884,6 +957,10 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     $('#ePickMap').onclick=()=>{if(!kakaoReady){toast('지도 연결 후 사용할 수 있어요');return;}mapMode='restaurant';setHint('👉 지도를 눌러 가게 위치를 찍으세요');scrollToAdminMap();};
 
     $('#exportData').onclick=exportData;
+    $('#gasSave').onclick=connectGas;
+    $('#gasUrl').addEventListener('keydown',e=>{if(e.key==='Enter')connectGas();});
+    $('#gasPull').onclick=()=>pullNow();
+    $('#gasPush').onclick=()=>pushNow();
     $('#pplMinus').onclick=()=>{const i=$('#logPeople');i.value=Math.max(1,(parseInt(i.value)||1)-1);updateLogHint();};
     $('#pplPlus').onclick=()=>{const i=$('#logPeople');i.value=Math.max(1,(parseInt(i.value)||1)+1);updateLogHint();};
     $('#logPeople').addEventListener('input',updateLogHint);
@@ -903,6 +980,7 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     load();if(!state.sort)state.sort='due';
     document.querySelectorAll('.sortbtns .chip').forEach(c=>c.classList.toggle('on',c.dataset.sort===state.sort));
     bind();renderAlmanac();renderList();fillOfficeCoord();renderOfficeState();
+    if(GAS_URL){$('#gasUrl').value=GAS_URL;setSync('연결됨 · 확인 중…');pullNow(true);}
     mapPlaceholder('mapToday');
     const ok=await loadKakao(KAKAO_KEY);kakaoReady=ok;renderKakaoStatus();
     if(ok)ensureMap('today');else mapPlaceholder('mapToday');
