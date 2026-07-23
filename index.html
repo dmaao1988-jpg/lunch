@@ -42,16 +42,18 @@
   .almanac::before{content:"";position:absolute;top:0;left:0;right:0;height:12px;
     background:radial-gradient(circle at 8px 12px, transparent 5px, var(--paper) 5px) repeat-x;
     background-size:20px 12px;background-position:0 -6px;z-index:2}
-  .alm-top{display:flex;justify-content:space-between;align-items:flex-start;padding:22px 20px 8px;border-bottom:1px dashed var(--line-strong)}
-  .alm-date{display:flex;flex-direction:column;line-height:1}
-  .alm-num{font-family:"Black Han Sans",sans-serif;font-size:64px;color:var(--red);letter-spacing:-1px}
-  .alm-ym{font-family:"Gowun Batang",serif;font-size:14px;color:var(--ink-soft);margin-top:4px;letter-spacing:1px}
-  .alm-dow{align-self:flex-start;font-family:"Gowun Batang",serif;font-weight:700;font-size:15px;
-    border:1.5px solid var(--red);color:var(--red);border-radius:2px;padding:3px 9px;letter-spacing:2px}
-  .alm-wx{display:flex;align-items:center;gap:10px;padding:12px 20px 4px;font-size:14px;color:var(--ink-soft)}
-  .alm-wx .emoji{font-size:20px}
+  .alm-top{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:18px 18px 12px;border-bottom:1px dashed var(--line-strong)}
+  .alm-date{display:flex;align-items:baseline;gap:5px;line-height:1}
+  .alm-yr{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:15px;color:var(--ink-soft)}
+  .alm-mo{font-family:"Black Han Sans",sans-serif;font-size:34px;color:var(--red);letter-spacing:-.5px}
+  .alm-num{font-family:"Black Han Sans",sans-serif;font-size:34px;color:var(--red);letter-spacing:-.5px}
+  .alm-unit{font-family:"Gowun Batang",serif;font-size:14px;color:var(--red);font-weight:700;margin-left:-2px}
+  .alm-dow{font-family:"Gowun Batang",serif;font-weight:700;font-size:14px;color:var(--ink-soft);margin-left:4px}
+  .alm-wx{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-soft);flex-shrink:0}
+  .alm-wx .emoji{font-size:19px}
   .alm-wx .temp{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink);font-size:15px}
-  .alm-verdict{padding:6px 20px 18px}
+  .alm-verdict{padding:11px 18px 14px}
   .verdict-lead{font-family:"Gowun Batang",serif;font-size:14px;color:var(--ink-soft);margin-bottom:8px}
   .verdict-lead .accent{color:var(--jade);font-weight:700}
   .pick{display:flex;align-items:center;gap:14px;background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:14px 15px}
@@ -62,7 +64,7 @@
   .pick-meta .mono{color:var(--ink)}
   .pick-menu{margin-top:10px;font-size:13px;color:var(--jade);font-weight:600}
   .pick-menu .price{font-family:"IBM Plex Mono",monospace;color:var(--ink-soft);font-weight:500}
-  .alm-actions{display:flex;gap:9px;padding:0 20px 22px;flex-wrap:wrap}
+  .alm-actions{display:flex;gap:9px;padding:0 18px 16px;flex-wrap:wrap}
   .empty-hero{padding:20px 20px 26px;text-align:center;color:var(--ink-soft);font-family:"Gowun Batang",serif}
   .empty-hero b{display:block;font-size:16px;color:var(--ink);margin-bottom:6px;font-family:"IBM Plex Sans KR",sans-serif}
 
@@ -91,22 +93,33 @@
   .sortbtns .chip.on,.period .chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
   .period{margin-bottom:16px}
 
-  .rlist{display:flex;flex-direction:column;gap:10px}
-  .rcard{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:13px 14px;display:flex;gap:12px;align-items:center;box-shadow:0 2px 0 rgba(34,28,18,.04)}
-  .rcard.fresh{opacity:.62}
-  .r-emoji{font-size:26px;width:34px;text-align:center;flex-shrink:0}
+  .rlist{display:flex;flex-direction:column;gap:8px}
+  .glabel{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:1.5px;color:var(--brass);
+    text-transform:uppercase;margin:14px 0 2px;display:flex;align-items:center;gap:8px}
+  .glabel:first-child{margin-top:0}
+  .glabel::after{content:"";flex:1;height:1px;background:var(--line)}
+  .rwrap{display:flex;flex-direction:column}
+  .rcard{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--line-strong);
+    border-radius:0 4px 4px 0;padding:12px 13px;display:flex;gap:12px;align-items:center}
+  .rcard.fresh{opacity:.55}
+  .r-emoji{font-size:25px;width:30px;text-align:center;flex-shrink:0}
   .r-body{flex:1;min-width:0}
-  .r-name{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-  .r-metaline{display:flex;flex-wrap:wrap;gap:8px 12px;font-size:12px;color:var(--ink-soft);margin-top:4px;align-items:center}
-  .badge{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;padding:2px 7px;border-radius:20px;line-height:1.6}
-  .badge.warm{background:rgba(211,56,42,.12);color:var(--red)}
-  .badge.cold{background:rgba(43,92,116,.14);color:var(--steel)}
-  .badge.neutral{background:rgba(34,28,18,.08);color:var(--ink-soft)}
-  .badge.due{background:var(--jade);color:#fff}
-  .r-dist,.r-last,.r-price{font-family:"IBM Plex Mono",monospace;color:var(--ink)}
-  .undo{color:var(--red);cursor:pointer;font-size:11px;border:none;background:none;padding:0;text-decoration:underline;font-family:inherit}
-  .r-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0}
-  .r-actions .km{font-size:11.5px;padding:6px 8px}
+  .r-body.tappable{cursor:pointer}
+  .r-name{font-size:16px;font-weight:700;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .r-key{font-size:13px;color:var(--ink);margin-top:3px;font-family:"IBM Plex Mono",monospace}
+  .r-sub{font-size:12px;color:var(--ink-soft);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .r-sub .undo{color:var(--red);cursor:pointer;font-size:11px;border:none;background:none;padding:0;text-decoration:underline;font-family:inherit}
+  .r-sub .mtog{color:var(--jade);font-weight:600}
+  .r-actions{display:flex;flex-direction:column;gap:7px;align-items:center;flex-shrink:0}
+  .mapicon{font-size:17px;text-decoration:none;line-height:1;opacity:.75}
+  .mapicon:hover{opacity:1}
+  .rmenus{background:var(--paper);border:1px solid var(--line);border-top:none;border-left:3px solid var(--line-strong);
+    border-radius:0 0 4px 0;padding:10px 13px}
+  .rmenus .mrow{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:4px 0;border-bottom:1px dotted var(--line)}
+  .rmenus .mrow:last-child{border-bottom:none}
+  .rmenus .mrow .mp{font-family:"IBM Plex Mono",monospace;color:var(--ink-soft);flex-shrink:0}
+  .rmenus .none{font-size:12.5px;color:var(--ink-soft);text-align:center;padding:4px 0}
+  .maptoggle{width:100%;margin-bottom:0}
 
   #mapToday,#mapAdmin{height:280px;border:1px solid var(--line-strong);border-radius:4px;position:relative;overflow:hidden;background:rgba(34,28,18,.05)}
   .map-err{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:22px;font-size:12.5px;color:var(--ink-soft);line-height:1.7;z-index:1}
@@ -120,6 +133,7 @@
   .stat-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
   .stat-tile{background:var(--card);border:1px solid var(--line-strong);border-radius:4px;padding:15px 10px;text-align:center}
   .stat-tile .num{font-family:"Black Han Sans",sans-serif;font-size:25px;color:var(--ink);line-height:1.05}
+  .stat-tile .num.money{font-size:17px;letter-spacing:-.3px;word-break:keep-all}
   .stat-tile .num.red{color:var(--red)}
   .stat-tile .num .unit{font-size:13px;font-family:"IBM Plex Sans KR"}
   .stat-tile .lbl{font-size:11px;color:var(--ink-soft);margin-top:5px}
@@ -263,7 +277,8 @@
     </div>
     <div class="sec">
       <div class="sec-head"><div class="sec-title"><span class="eyebrow">map</span><h2>거리 한눈에</h2></div></div>
-      <div id="mapToday"></div>
+      <button class="btn ghost sm maptoggle" id="mapToggle">지도 보기 ▾</button>
+      <div id="mapToday" class="hidden" style="margin-top:10px"></div>
     </div>
   </div>
 
@@ -638,15 +653,20 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     const w=wxInfo(weather.code);el.innerHTML=`<span>${w.e}</span><span>${w.t}</span><b>${weather.temp}℃</b>`;}
   function renderAlmanac(){
     const el=$('#almanac'),d=new Date(),dow=['일','월','화','수','목','금','토'][d.getDay()];
-    const head=`<div class="alm-top"><div class="alm-date"><span class="alm-num">${d.getDate()}</span>
-      <span class="alm-ym">${d.getFullYear()}. ${String(d.getMonth()+1).padStart(2,'0')}</span></div><span class="alm-dow">${dow}요일</span></div>`;
+    const wxHead=weather
+      ?`<div class="alm-wx"><span class="emoji">${wxInfo(weather.code).e}</span><span>${wxInfo(weather.code).t}</span><span class="temp">${weather.temp}℃</span></div>`
+      :`<div class="alm-wx"><span>날씨 확인 중</span></div>`;
+    const head=`<div class="alm-top"><div class="alm-date">
+      <span class="alm-yr">${d.getFullYear()}</span>
+      <span class="alm-mo">${d.getMonth()+1}</span><span class="alm-unit">월</span>
+      <span class="alm-num">${d.getDate()}</span><span class="alm-unit">일</span>
+      <span class="alm-dow">${dow}요일</span></div>${wxHead}</div>`;
     if(!state.restaurants.length){el.innerHTML=head+`<div class="empty-hero"><b>아직 식당이 없어요</b>
       상단 <em>관리</em> 탭에서 회사 위치와 식당을 등록하면<br>날씨에 맞는 오늘의 점심을 뽑아드려요.</div>`;return;}
     const pick=recommend(),cat=catBy[pick.cat]||{emoji:'🍽️'},ll=lastLabel(pick),km=distKm(state.office,pick),ml=moodLine();
-    const wx=weather?`<div class="alm-wx"><span class="emoji">${wxInfo(weather.code).e}</span><span>${wxInfo(weather.code).t}</span><span class="temp">${weather.temp}℃</span></div>`:'';
     let menuLine='';if(pick.menus&&pick.menus.length){const m=pick.menus[Math.floor(Math.random()*pick.menus.length)];
       menuLine=`<div class="pick-menu">🍽 오늘은 <u>${esc(m.name)}</u> 어때요? <span class="price">${won(m.price)}</span></div>`;}
-    el.innerHTML=head+wx+`<div class="alm-verdict">
+    el.innerHTML=head+`<div class="alm-verdict">
       <div class="verdict-lead serif">${ml.lead}${ml.accent?`<span class="accent">${ml.accent}</span>`:''} · <b>${ml.word}</b></div>
       <div class="pick"><div class="pick-emoji">${cat.emoji}</div><div class="pick-body">
         <div class="pick-name">${esc(pick.name)}</div>
@@ -665,35 +685,64 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     $('#ateToday').onclick=()=>logVisit(pick.id);
   }
 
+  function priceFrom(r){const p=(r.menus||[]).map(m=>m.price).filter(x=>x!=null&&x!=='').map(Number);
+    if(!p.length)return'';const mn=Math.min(...p);return p.length>1?won(mn)+'~':won(mn);}
+  function urgencyColor(d){
+    if(d===null||d>=14)return'#D3382A';
+    if(d>=7)return'#B5892F';
+    if(d>=3)return'#2F5D50';
+    return'rgba(34,28,18,.22)';}
+  function sinceText(ll){
+    if(ll.d===null)return'방문 기록 없음';
+    if(ll.d===0)return'오늘 감';
+    if(ll.d===1)return'어제 감';
+    return`${ll.d}일째 안 감`;}
+
+  function cardHtml(r,km,ll){
+    const cat=catBy[r.cat]||{emoji:'🍽️'};
+    const col=urgencyColor(ll.d);
+    const fresh=ll.d!==null&&ll.d<=1?'fresh':'';
+    const pf=priceFrom(r);
+    const mc=(r.menus||[]).length;
+    const mtog=mc?`<span class="mtog">메뉴 ${mc}개 ▾</span>`:'';
+    const undo=ll.d!==null?`<button class="undo" data-undo="${r.id}">취소</button>`:'';
+    const mlist=mc?r.menus.map(m=>`<div class="mrow"><span>${esc(m.name)}</span><span class="mp">${m.price!=null?won(m.price):'—'}</span></div>`).join(''):'';
+    return `<div class="rwrap">
+      <div class="rcard ${fresh}" style="border-left-color:${col}">
+        <span class="r-emoji">${cat.emoji}</span>
+        <div class="r-body ${mc?'tappable':''}" ${mc?`data-menu="${r.id}"`:''}>
+          <div class="r-name">${esc(r.name)}</div>
+          <div class="r-key">${fmtDist(km)}${pf?' · '+pf:''}</div>
+          <div class="r-sub"><span>${sinceText(ll)}</span>${mtog}${undo}</div>
+        </div>
+        <div class="r-actions">
+          <button class="btn jade sm" data-ate="${r.id}">먹었어요</button>
+          <a class="mapicon" href="${kakaoDir(r)}" target="_blank" rel="noopener" title="카카오맵 길찾기">🗺</a>
+        </div>
+      </div>
+      ${mc?`<div class="rmenus hidden" id="mn-${r.id}" style="border-left-color:${col}">${mlist}</div>`:''}
+    </div>`;
+  }
+
   function renderList(){
     const el=$('#rlist');
     const arr=state.restaurants.map(r=>{const ll=lastLabel(r);return{r,km:distKm(state.office,r),ll,ds:ll.d===null?9999:ll.d};});
-    if(state.sort==='dist')arr.sort((a,b)=>a.km-b.km);else arr.sort((a,b)=>b.ds-a.ds);
     if(!arr.length){el.innerHTML=`<div style="color:var(--ink-soft);font-size:13px;text-align:center;padding:14px">관리 탭에서 식당을 등록해 주세요.</div>`;return;}
-    el.innerHTML=arr.map(({r,km,ll})=>{const cat=catBy[r.cat]||{emoji:'🍽️',affinity:'neutral'};
-      const aff=cat.affinity==='warm'?'<span class="badge warm">따뜻</span>':cat.affinity==='cold'?'<span class="badge cold">시원</span>':'<span class="badge neutral">무난</span>';
-      const due=(ll.d===null||ll.d>=7)?'<span class="badge due">갈 때 됨</span>':'';
-      const fresh=ll.d!==null&&ll.d<=1?'fresh':'';
-      const lastTxt=ll.d===null?'기록 없음':`${ll.txt}${ll.date?` (${ll.date.slice(5)})`:''}`;
-      const undo=ll.d!==null?`<button class="undo" data-undo="${r.id}">취소</button>`:'';
-      const pr=priceRange(r);const prTxt=pr?`<span class="r-price">${pr}</span>`:'';
-      const mc=(r.menus||[]).length;
-      const mchip=mc?`<button class="menu-chip" data-menu="${r.id}">메뉴 ${mc} ▾</button>`:'';
-      const mlist=mc?(r.menus.map(m=>`<div class="mrow"><span>${esc(m.name)}</span><span class="mp">${m.price!=null?won(m.price):'—'}</span></div>`).join('')):'<div class="none">등록된 메뉴가 없어요</div>';
-      return `<div class="rwrap"><div class="rcard ${fresh}"><div class="r-emoji">${cat.emoji}</div>
-        <div class="r-body"><div class="r-name">${esc(r.name)} ${aff} ${due}</div>
-        <div class="r-metaline"><span class="r-dist">${fmtDist(km)} · 도보 ${walkMin(km)}분</span>${prTxt}
-        <span class="r-last">🕘 ${lastTxt}</span>${mchip}${undo}</div></div>
-        <div class="r-actions"><button class="btn jade sm" data-ate="${r.id}">먹었어요</button>
-        <a class="btn kakao sm km" href="${kakaoDir(r)}" target="_blank" rel="noopener">🗺 길찾기</a></div></div>
-        <div class="rmenus hidden" id="mn-${r.id}">${mlist}</div></div>`;
-    }).join('');
+    const sorter=state.sort==='dist'?((a,b)=>a.km-b.km):((a,b)=>b.ds-a.ds);
+    const due=arr.filter(x=>x.ds>=7).sort(sorter);
+    const recent=arr.filter(x=>x.ds<7).sort(sorter);
+    let html='';
+    if(due.length)html+=`<div class="glabel">갈 때 됐어요</div>`+due.map(x=>cardHtml(x.r,x.km,x.ll)).join('');
+    if(recent.length)html+=`<div class="glabel">최근에 갔어요</div>`+recent.map(x=>cardHtml(x.r,x.km,x.ll)).join('');
+    el.innerHTML=html;
+    el.querySelectorAll('[data-ate]').forEach(b=>b.onclick=e=>{e.stopPropagation();logVisit(b.dataset.ate);});
+    el.querySelectorAll('[data-undo]').forEach(b=>b.onclick=e=>{e.stopPropagation();undoVisit(b.dataset.undo);});
     el.querySelectorAll('[data-menu]').forEach(b=>b.onclick=()=>{
-      const box=document.getElementById('mn-'+b.dataset.menu);
-      const open=box.classList.toggle('hidden');
-      b.textContent=`메뉴 ${(state.restaurants.find(x=>x.id===b.dataset.menu).menus||[]).length} ${open?'▾':'▴'}`;});
-    el.querySelectorAll('[data-ate]').forEach(b=>b.onclick=()=>logVisit(b.dataset.ate));
-    el.querySelectorAll('[data-undo]').forEach(b=>b.onclick=()=>undoVisit(b.dataset.undo));
+      const box=document.getElementById('mn-'+b.dataset.menu);if(!box)return;
+      const closed=box.classList.toggle('hidden');
+      const t=b.querySelector('.mtog');
+      const n=(state.restaurants.find(x=>x.id===b.dataset.menu).menus||[]).length;
+      if(t)t.textContent=`메뉴 ${n}개 ${closed?'▾':'▴'}`;});
   }
 
   let logTarget=null,logOrigDate=null;
@@ -819,10 +868,10 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     let html=`<div class="stat-tiles">
       <div class="stat-tile"><div class="num red">${totalVisits}<span class="unit">회</span></div><div class="lbl">${rangeLabel} 외식</div></div>
       <div class="stat-tile"><div class="num">${totalPeople}<span class="unit">명</span></div><div class="lbl">누적 인원</div></div>
-      <div class="stat-tile"><div class="num">${totalSpend?Math.round(totalSpend/1000):0}<span class="unit">천원</span></div><div class="lbl">총 지출</div></div>
+      <div class="stat-tile"><div class="num money">${Math.round(totalSpend).toLocaleString('ko-KR')}<span class="unit">원</span></div><div class="lbl">총 지출</div></div>
     </div>
     <div class="statblock" style="padding:13px 16px"><div class="mom">
-      <span class="sub">1인당 평균</span><span class="big">${avgMeal?Math.round(avgMeal).toLocaleString('ko-KR'):0}원</span>
+      <span class="sub">1인당 평균</span><span class="big">${Math.round(avgMeal).toLocaleString('ko-KR')}원</span>
       <span class="sub">한 끼 평균 ${totalVisits?Math.round(totalPeople/totalVisits*10)/10:0}명</span></div>
       ${hasEst?'<div style="font-size:11px;color:var(--ink-soft);margin-top:7px">※ 금액 미입력 방문은 메뉴 평균가로 추정했어요</div>':''}</div>`;
 
@@ -1069,7 +1118,8 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
   function showTab(name){document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
     $('#view'+name).classList.add('on');$('#tab'+name).classList.add('on');
-    if(name==='Today'){if(kakaoReady)ensureMap('today');else mapPlaceholder('mapToday');}
+    if(name==='Today'){const box=$('#mapToday');
+      if(box&&!box.classList.contains('hidden')){if(kakaoReady)ensureMap('today');else mapPlaceholder('mapToday');}}
     if(name==='Stats')renderStats();
     if(name==='Admin'){renderOfficeState();fillOfficeCoord();renderAdminList();renderKakaoStatus();renderVisitLog();
       if(kakaoReady)ensureMap('admin');else mapPlaceholder('mapAdmin');}}
@@ -1107,6 +1157,10 @@ var KAKAO_KEY = "46e797cc404d6acace592c92f109c049";
     $('#eSearch').addEventListener('keydown',e=>{if(e.key==='Enter')$('#eSearchBtn').click();});
     $('#ePickMap').onclick=()=>{if(!kakaoReady){toast('지도 연결 후 사용할 수 있어요');return;}mapMode='restaurant';setHint('👉 지도를 눌러 가게 위치를 찍으세요');scrollToAdminMap();};
 
+    $('#mapToggle').onclick=()=>{
+      const box=$('#mapToday'),closed=box.classList.toggle('hidden');
+      $('#mapToggle').textContent=closed?'지도 보기 ▾':'지도 접기 ▴';
+      if(!closed){if(kakaoReady)ensureMap('today');else mapPlaceholder('mapToday');}};
     $('#exportData').onclick=exportData;
     $('#gasSave').onclick=connectGas;
     $('#gasUrl').addEventListener('keydown',e=>{if(e.key==='Enter')connectGas();});
